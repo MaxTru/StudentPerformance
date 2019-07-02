@@ -1,0 +1,45 @@
+---
+title: 'STAT 420: Data Analysis Project - Proposal'
+author: "Rafal Tytyk (rtytyk2), Maximilian Trumpf (mtrumpf2)"
+date: ''
+output:
+  html_document: 
+    toc: yes
+  pdf_document: default
+urlcolor: cyan
+---
+
+***
+
+## Project overview
+
+### Project title 
+
+Work in Progress
+
+### Project team
+
+| Name              | Netid    | E-Mail               | Role                                                               |
+|-------------------|----------|----------------------|--------------------------------------------------------------------|
+| Rafal Tytyk       | rtytyk2  |                      | No specific role, team will work entire on project collaboratively |
+| Maximilian Trumpf | mtrumpf2 | trumpf.max@gmail.com | No specific role, team will work entire on project collaboratively |
+
+## Proposed Dataset
+
+### Description
+
+*Description of the dataset. You do not necessarily have to list all the variables, but at least mention those of greatest importance.*
+*After reading the proposal, a reader should have a good understanding of your dataset without needing to reference the data itself or other documentation.*
+
+### Background information
+
+*Background information on the dataset, including specific citation of its source*
+
+### Motivation
+
+*A brief statement of the business, science, research, or personal interest you have in the dataset that you hope to explore*
+
+### Evidence data loaded into `R`
+
+*Evidence that the data can be loaded into `R`. Load the data, and print the first few values of the response variable as evidence.*
+
