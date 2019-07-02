@@ -256,9 +256,9 @@ $(document).ready(function () {
 <h3>Description</h3>
 <div id="overview" class="section level4">
 <h4>Overview</h4>
-<p>The dataset documents student performance in secondary education in two Portugese schools.</p>
-<p>The original data provides two datasets covering two distinct subjects: Mathematics (<strong>395 observations</strong>) and Portugese (<strong>649 observations</strong>). Both datasets include the exact same set of attributes (<strong>33 attriutes</strong>, see table below). When merging the two datasets, one will find <strong>382 observations/students</strong> who are present in the data and have taken both courses. (Merged based on<code>&quot;school&quot;, &quot;sex&quot;, &quot;age&quot;, &quot;address&quot;, &quot;famsize&quot;, &quot;Pstatus&quot;, &quot;Medu&quot;, &quot;Fedu&quot;, &quot;Mjob&quot;, &quot;Fjob&quot;, &quot;reason&quot;, &quot;nursery&quot;, &quot;internet&quot;</code>).</p>
-<p>The main goal of this project is to predict student performance based on demographic and social features. The dataset includes a variety of predictors. However, currently we considering the following ones as most important response and predictor variables (this list might change during the analysis):</p>
+<p>We propose to use the <em>“Student Performance”</em> dataset. The dataset documents student performance in secondary education in two Portugese schools.</p>
+<p>The original data provides two datasets covering two distinct subjects: Mathematics (<strong>395 observations</strong>) and Portugese (<strong>649 observations</strong>). Both datasets include the exact same set of attributes (<strong>33 attriutes</strong>, see table below). When merging the two datasets, one will find <strong>382 observations/students</strong> who are present in the data and have taken both courses. (Merged based on<code>&quot;school&quot;, &quot;sex&quot;, &quot;age&quot;, &quot;address&quot;, &quot;famsize&quot;, &quot;Pstatus&quot;, &quot;Medu&quot;, &quot;Fedu&quot;, &quot;Mjob&quot;, &quot;Fjob&quot;, &quot;reason&quot;, &quot;nursery&quot;, &quot;internet&quot;</code>). We are planning to run the analysis primarily on the merged dataset. This will allow us to develop and compare models predicting the performance for either <code>Math</code> or <code>Portugese</code>.</p>
+<p>The main goal of this project is to predict student performance based on demographic and social features. The dataset includes a variety of predictors. Currently we are considering the following ones as most important response and predictor variables (this list might change during the analysis):</p>
 <ul>
 <li>Main response: <strong>G3 - final grade</strong></li>
 <li>Main predictors
@@ -267,7 +267,7 @@ $(document).ready(function () {
 <li><strong>Age</strong> (numeric)</li>
 <li><strong>Family size</strong> (categorial)</li>
 <li><strong>Time spend with various activites</strong> (numeric from 1 to 5; see full list of activites below)</li>
-<li><strong>Education of parents</strong> (numeric from 1 to 4)</li>
+<li><strong>Parents’ education</strong> (numeric from 1 to 4)</li>
 </ul></li>
 </ul>
 </div>

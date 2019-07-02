@@ -32,7 +32,7 @@ Prediction of student high school performance considering demographic and social
 
 We propose to use the *"Student Performance"* dataset. The dataset documents student performance in secondary education in two Portugese schools. 
 
-The original data provides two datasets covering two distinct subjects: Mathematics (**395 observations**) and Portugese (**649 observations**). Both datasets include the exact same set of attributes (**33 attriutes**, see table below). When merging the two datasets, one will find **382 observations/students** who are present in the data and have taken both courses. (Merged based on` "school", "sex", "age", "address", "famsize", "Pstatus", "Medu", "Fedu", "Mjob", "Fjob", "reason", "nursery", "internet"`).
+The original data provides two datasets covering two distinct subjects: Mathematics (**395 observations**) and Portugese (**649 observations**). Both datasets include the exact same set of attributes (**33 attriutes**, see table below). When merging the two datasets, one will find **382 observations/students** who are present in the data and have taken both courses. (Merged based on` "school", "sex", "age", "address", "famsize", "Pstatus", "Medu", "Fedu", "Mjob", "Fjob", "reason", "nursery", "internet"`). We are planning to run the analysis primarily on the merged dataset. This will allow us to develop and compare models predicting the performance for either `Math` or `Portugese`.
 
 The main goal of this project is to predict student performance based on demographic and social features. The dataset includes a variety of predictors. Currently we are considering the following ones as most important response and predictor variables (this list might change during the analysis):
 
