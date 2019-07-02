@@ -3,8 +3,11 @@ title: 'STAT 420: Data Analysis Project - Proposal'
 author: "Rafal Tytyk (rtytyk2), Maximilian Trumpf (mtrumpf2)"
 date: ''
 output:
-  html_document: 
+  html_document:
+    theme: flatly
     toc: yes
+    fig_width: 10
+    fig_height: 5
   pdf_document: default
 urlcolor: cyan
 ---
@@ -19,10 +22,10 @@ Prediction of student high school performance considering demographic and social
 
 ### Project team
 
-| Name              | Netid    | E-Mail               | Role                                                               |
-|-------------------|----------|----------------------|--------------------------------------------------------------------|
-| Rafal Tytyk       | rtytyk2  | *TBA*               | No specific role, team will work entire on project collaboratively |
-| Maximilian Trumpf | mtrumpf2 | trumpf.max@gmail.com | No specific role, team will work entire on project collaboratively |
+| Name              | Netid    | E-Mail                | Role                                                             |
+|-------------------|----------|-----------------------|-------------------------------------------------------------------|
+| Rafal Tytyk       | rtytyk2  | rtytyk2@illinois.edu  | No specific role, team will work entire on project collaboratively |
+| Maximilian Trumpf | mtrumpf2 | mtrumpf2@illinois.edu | No specific role, team will work entire on project collaboratively |
 
 ## Proposed Dataset
 
@@ -98,12 +101,11 @@ The main motivation for this analysis is personal: We, the project authors (Maxi
 
 First, load the data.
 ```{r message=FALSE}
-library(readr)
-student_por <- read_delim("data/student-por.csv", ";", escape_double = FALSE, trim_ws = TRUE)
-
+students.por = read.csv("data/student-por.csv", sep = ";")
+students.mat = read.csv("data/student-mat.csv", sep = ";")
 ```
 
 Then, print first values of the main response variable `G3`.
 ```{r}
-head(student_por$G3)
+head(students.por$G3)
 ```
