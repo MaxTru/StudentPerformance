@@ -95,7 +95,7 @@ The dataset was collected by Paulo Cortez, University of Minho, Guimarães, Port
 
 ### Motivation
 
-The main motivation for this analysis is personal: We, the project authors (Maximilian Trumpf and Rafal Tytyk), are both parents ourselves. Being confronted with the situation that our children will go to school soon, we want to give them the best environment for a good performance in school. This analysis will help us to identify the main factors affecting performance in school.
+The main motivation for this analysis is personal: We, the project authors (Maximilian Trumpf and Rafal Tytyk), are both parents ourselves. Being confronted with the situation that our children will go to school soon, we want to give them the best environment for good performance in school. This analysis will help us to identify the main factors for that.
 
 ### Evidence data loaded into `R`
 
