@@ -1,7 +1,7 @@
 ---
 title: 'STAT 420: Data Analysis Project - Proposal'
 author: "Rafal Tytyk (rtytyk2), Maximilian Trumpf (mtrumpf2)"
-date: ''
+date: '2019-07-03'
 output:
   html_document:
     theme: flatly
@@ -102,10 +102,9 @@ The main motivation for this analysis is personal: We, the project authors (Maxi
 First, load the data.
 ```{r message=FALSE}
 students.por = read.csv("data/student-por.csv", sep = ";")
-students.mat = read.csv("data/student-mat.csv", sep = ";")
 ```
 
 Then, print first values of the main response variable `G3`.
 ```{r}
-head(students.por$G3)
+head(students.por$G3, 10)
 ```
