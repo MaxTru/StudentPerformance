@@ -1,0 +1,186 @@
+---
+title: 'Prediction of student high school performance considering demographic and social features'
+author: "STAT 420: Data Analysis Project - Summer 2019"
+date: '2019-08-03 | Maximilian Trumpf (mtrumpf2), Rafal Tytyk (rtytyk2)'
+output:
+  html_document:
+    theme: flatly
+    toc: yes
+    fig_width: 10
+    fig_height: 5
+  pdf_document: default
+urlcolor: cyan
+---
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4, width = 80)
+library(readr)
+```
+
+# Introduction
+
+## Goal and motivation
+
+The main goal of this project is to build a model which is capable of predicting student performance based on demographic and social features. In order to achieve this, we will use a dataset of student performances in secondary education in two Portugese schools (see [Data chapter](#data_chapter) for details and introduction to the dataset).
+
+The dataset contains many predictors, which were collected using a consistent method (surveies and school reports) in a certain context (two defines Portugese schools in 2008). Therefore, the regression model being built will not be well fit for predicting student performance in a different context and with predictors being collected even with a slightly adjusted method. However, the primary goal of the regression model is **to explain the relationship of demographic and social features for student performance**. 
+
+This regression model based explanation is of personal motivation for the authors of this report, since they are both fathers themselves and are interested in learning how to give a supportive environment for their children (although this analysis can of course only cover a very specialized tiny part and should not be understand as an extensive study of how to support children during high school).
+
+## Data {#data_chapter}
+
+### Overview 
+
+This analysis will use the *"Student Performance"* dataset. The dataset documents student performance in secondary education in two Portugese schools. 
+
+The original data provides two datasets covering two distinct subjects: Mathematics (**395 observations**) and Portugese (**649 observations**). Both datasets include the exact same set of attributes (**33 attriutes**, see table below). When merging the two datasets, one will find **382 observations/students** who are present in the data and have taken both courses. (Merged based on ` "school", "sex", "age", "address", "famsize", "Pstatus", "Medu", "Fedu", "Mjob", "Fjob", "reason", "nursery", "internet"`). Since this large overlap would impact the regression significantly (same students in both datasets), the model will primarily be fit on the larger `Portugese` dataset. If promising, we will also model the performance in the `Math` dataset and compare the `Portugese` with the `Math` model in the course of the analysis.
+
+### Attributes
+
+The main attributes to be used are the following:
+
+* Main response: **G3 - final grade**
+* Main predictors
+    * **Sex** (categorial)
+    * **Age** (numeric)
+    * **Family size** (categorial)
+    * **Time spend with various activites** (numeric from 1 to 5; see full list of activites below)
+    * **Parents' education** (numeric from 1 to 4)
+    
+The full list of attributes can be found in the following table:
+
+| Id | Name       | Description                                                                                                                                            |
+|----|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1  | school     | student's school (binary: 'GP' - Gabriel Pereira or 'MS' - Mousinho da Silveira)                                                                       |
+| 2  | sex        | student's sex (binary: 'F' - female or 'M' - male)                                                                                                     |
+| 3  | age        | student's age (numeric: from 15 to 22)                                                                                                                 |
+| 4  | address    | student's home address type (binary: 'U' - urban or 'R' - rural)                                                                                       |
+| 5  | famsize    | family size (binary: 'LE3' - less or equal to 3 or 'GT3' - greater than 3)                                                                             |
+| 6  | Pstatus    | parent's cohabitation status (binary: 'T' - living together or 'A' - apart)                                                                            |
+| 7  | Medu       | mother's education (numeric: 0 - none, 1 - primary education (4th grade), 2 - 5th to 9th grade, 3 - secondary education or 4 - higher education) |
+| 8  | Fedu       | father's education (numeric: 0 - none, 1 - primary education (4th grade), 2 - 5th to 9th grade, 3 - secondary education or 4 - higher education) |
+| 9  | Mjob       | mother's job (nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')                       |
+| 10 | Fjob       | father's job (nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')                       |
+| 11 | reason     | reason to choose this school (nominal: close to 'home', school 'reputation', 'course' preference or 'other')                                           |
+| 12 | guardian   | student's guardian (nominal: 'mother', 'father' or 'other')                                                                                            |
+| 13 | traveltime | home to school travel time (numeric: 1 - 1 hour)                                                                                                       |
+| 14 | studytime  | weekly study time (numeric: 1 - 10 hours)                                                                                                              |
+| 15 | failures   | number of past class failures (numeric: n if 1<=n<3, else 4)                                                                                           |
+| 16 | schoolsup  | extra educational support (binary: yes or no)                                                                                                          |
+| 17 | famsup     | family educational support (binary: yes or no)                                                                                                         |
+| 18 | paid       | extra paid classes within the course subject (Math or Portuguese) (binary: yes or no)                                                                  |
+| 19 | activities | extra-curricular activities (binary: yes or no)                                                                                                        |
+| 20 | nursery    | attended nursery school (binary: yes or no)                                                                                                            |
+| 21 | higher     | wants to take higher education (binary: yes or no)                                                                                                     |
+| 22 | internet   | Internet access at home (binary: yes or no)                                                                                                            |
+| 23 | romantic   | with a romantic relationship (binary: yes or no)                                                                                                       |
+| 24 | famrel     | quality of family relationships (numeric: from 1 - very bad to 5 - excellent)                                                                          |
+| 25 | freetime   | free time after school (numeric: from 1 - very low to 5 - very high)                                                                                   |
+| 26 | goout      | going out with friends (numeric: from 1 - very low to 5 - very high)                                                                                   |
+| 27 | Dalc       | workday alcohol consumption (numeric: from 1 - very low to 5 - very high)                                                                              |
+| 28 | Walc       | weekend alcohol consumption (numeric: from 1 - very low to 5 - very high)                                                                              |
+| 29 | health     | current health status (numeric: from 1 - very bad to 5 - very good)                                                                                    |
+| 30 | absences   | number of school absences (numeric: from 0 to 93)                                                                                                      |
+| 31 | G1         | first period grade (numeric: from 0 to 20)                                                                                                             |
+| 32 | G2         | second period grade (numeric: from 0 to 20)                                                                                                            |
+| 33 | G3         | final grade (numeric: from 0 to 20)                                                                                                                    |
+  
+### Background information
+
+The data was collected by using school reports and questionnaries. 
+
+The data was accessed on 2019-07-02 via [UCI Machine Learning Repository/Student Performance](http://archive.ics.uci.edu/ml/datasets/Student+Performance#). 
+
+The dataset was collected by Paulo Cortez, University of Minho, Guimarães, Portugal, [http://www3.dsi.uminho.pt/pcortez](http://www3.dsi.uminho.pt/pcortez).
+
+# Methods
+
+## Data preparation
+
+First we will load the data
+```{r message=FALSE}
+student = read_delim("data/student-por.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+head(student)
+```
+
+Check whether we have any missing values
+```{r}
+any(is.na(student))
+```
+
+No missing values, so continue as is.
+
+Validate that the attributes have the desired types
+```{r}
+str(student)
+```
+
+There are two important observations from the structure from the data:
+
+1. Various attributes are clearly categorial predictors (e.g., `romantic (yes, no)`).
+2. Some attributes could either be modeled as categorial or as numeric predictors (e.g., `traveltime`, `studytime`).
+
+For now we will:
+
+* Convert the clear categorial predictors (e.g., `romantic (yes, no)`) to factors for easier later usage.
+* Keep the debateable numeric predictors (e.g., `traveltime (1, 2, 3, 4, 5)`) as numeric predictors. Generally this should be okay, since the numbers represent a clear order (they represent `very low` to `very high`). However, it needs to be considered when interpreting the results that the model using these numeric attributes will force the average change of the response between the different values to be the same (e.g., the average change of the response between a student with `traveltime = 1 (very low)` and another student with `traveltime = 2 (low)` will be the same as between a student with `traveltime = 4 (high)` and another student with `traveltime = 5 (very high)`.
+
+Perform the discussed factor conversion
+```{r}
+factorCols     = c("sex", "famsize", "Pstatus", "Mjob", "Fjob", "reason", "guardian", "schoolsup", "famsup", "paid", "activities", "nursery", "higher", "internet", "romantic")
+student[factorCols]  =lapply(student[factorCols], factor)  ## as.factor() could also be used
+```
+
+## Data overview
+
+Evalaute correlation
+```{r}
+# Evaluate correlation
+cor_matrix = cor(student[, sapply(student, is.numeric)])
+cor_matrix[cor_matrix > 0.7 & cor_matrix < 1.0]
+which( cor_matrix > 0.7 & cor_matrix < 1.0, arr.ind = T)
+```
+
+There are ``r sum(cor_matrix > 0.7 & cor_matrix < 1.0)`` pairs of numeric attributes with a high correlation of above `0.7`. However, the are `G1`, `G2` and `G3`. We will use the final grade `G3` as a predictor and ignore the others. Therefore we don't expect mutlicollinearity issues.
+
+Visualize distribution of response attribute
+```{r}
+hist(student$G3,   
+     xlab   = "G3 grade (student performance)",
+     main   = "Histogram of G3",
+     breaks = 20,
+     xlim   = c(0, 20),
+     col    = "dodgerblue",
+     border = "black")
+```
+
+From a visual inspection, the response seems to follow a Poisson distribution (except for the peak at `G3 = 0`).
+
+# TODO: Discuss with Rafal. We probably need to model GLM with Poisson distribution. This is new for us. Just FYI...
+
+*The methods section should contain the bulk of your “work.” This section will contain the bulk of the R code that is used to generate the results. Your R code is not expected to be perfect idiomatic R, but it is expected to be understood by a reader without too much effort. Use RMarkdown and code comments to your advantage to explain your code if needed.*
+
+*This section should contain any information about data preparation that is performed to the original data before modelling. Then you will apply methods seen in class, which may include some of the following but are not limited to:*
+
+*Multiple linear regression*
+*Dummy variables*
+*Interaction*
+*Residual diagnostics*
+*Outlier diagnostics*
+*Transformations*
+*Polynomial regression*
+*Model selection*
+*Your task is not to use as many methods as possible. Your task is to use appropriate methods to find a good model that can correctly answer a question about the dataset, and then to communicate your result effectively.*
+
+# Results
+
+*The results section should contain numerical or graphical summaries of your results. You should report a final model you have chosen. There is not necessarily one, singular correct model, but certainly some methods and models are better than others in certain situations. You may use any methods we studied this semester to complete this task, and provide evidence that your final choice of model is a good one.*
+
+# Discussion
+
+*The discussion section should contain discussion of your results and should frame your results in the context of the data. How is your final model useful?*
+
+# Appendix
+
+*The appendix section should contain code and analysis that is used, but that may clutter the report or is not directly related to the choice of model.*
