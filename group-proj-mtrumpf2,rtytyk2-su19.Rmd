@@ -13,8 +13,10 @@ urlcolor: cyan
 ---
 
 ```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
-options(scipen = 1, digits = 4, width = 80)
+options(scipen = 1, digits = 4, width = 80, fig.align = "center")
 library(readr)
+library(boot)
+library(ggplot2)
 ```
 
 # Introduction
@@ -99,8 +101,7 @@ The dataset was collected by Paulo Cortez, University of Minho, Guimarães, Port
 
 First we will load the data
 ```{r message=FALSE}
-student = read_delim("data/student-por.csv", 
-    ";", escape_double = FALSE, trim_ws = TRUE)
+student = read_delim("data/student-por.csv", ";", escape_double = FALSE, trim_ws = TRUE)
 head(student)
 ```
 
@@ -138,7 +139,6 @@ Evaluate correlation
 ```{r}
 # Evaluate correlation
 cor_matrix = cor(student[, sapply(student, is.numeric)])
-cor_matrix[cor_matrix > 0.7 & cor_matrix < 1.0]
 which( cor_matrix > 0.7 & cor_matrix < 1.0, arr.ind = T)
 ```
 
@@ -159,6 +159,100 @@ points(dpois(x = 0:20, lambda = 10), col = "orange", pch = 20, cex = 2)
 ```
 
 From a visual inspection, the response could either follow a normal (green curve) or a Poisson distribution (orange points). Since there is not a large delta of the "fit", we will continue with using **Linear Regression Models** over **Generalized Linear Models with link function for Poisson distribution**.
+
+## Data Split
+
+We'll split our dataset into train/test sets:
+
+```{r}
+set.seed(42)
+trn_idx = sample(nrow(student), round(nrow(student)*.8))
+student_trn = student[trn_idx, ]
+student_tst = student[-trn_idx, ]
+```
+
+## Diagnostics
+
+And provide a set function for diagnostics of the model:
+
+```{r}
+accuracy = function(model) {
+  mean(round(predict(model, newdata = student_tst)) != student_tst$G3)
+}
+
+rmse_train = function(model) {
+  predicted = predict(model, student_trn)
+  sqrt(mean((student_trn$G3 - predicted) ^ 2))
+}
+
+rmse_test = function(model) {
+  predicted = predict(model, student_tst)
+  sqrt(mean((student_tst$G3 - predicted) ^ 2))
+}
+
+influence = function(model, alpha = 0.01) {
+  model_coef = summary(model)$coefficients
+  model_coef[model_coef[,"Pr(>|t|)"] < alpha, "Pr(>|t|)"]
+}
+```
+
+## Initial model evaluation
+
+Now we'll build full additive model using and compare P-values to $\alpha=0.05$:
+
+```{r}
+full_add_mod = lm(G3 ~ ., data = student_trn)
+influence(full_add_mod)
+```
+
+We're finding `G2` and `G1` as being very influential for the outcome of `G3`. This is expected, but we'd like to understand influence of other factors that the exams themselves, thus we'll remove both and try another model:
+
+```{r}
+add_mod2 = lm(G3 ~ . - G2 - G1, data = student_trn)
+influence(add_mod2)
+```
+
+We're discovering `school`, `failures`, `higher`, `health` are being the most influential predictors, rejecting null hypothesis for any reasonable $\alpha$ level. Let's build a model out of those predictors:
+
+```{r}
+add_mod3 = lm(G3 ~ school + failures + higher + health, data = student_trn)
+```
+
+And compare it to the full additive model that has `G2` and `G1` removed:
+
+```{r}
+anova(add_mod3, add_mod2)$`Pr(>F)`[2]
+```
+
+We reject null hypothesis. There are other predictors that we should consider and we'll use our third model to start searching for improvement.
+
+Now let's see how our model does on the test set:
+
+```{r}
+accuracy(add_mod3)
+rmse_train(add_mod3)
+rmse_test(add_mod3)
+```
+
+$81\%$ is a good start, now let's start searching for a better model using `AIC`:
+
+```{r}
+scope = formula(lm(G3 ~ (. - G2 - G1) ^ 2, data = student_trn))
+selected_frw = step(add_mod3, scope = scope, direction = "forward", trace = 0)
+coef(selected_frw)
+```
+
+```{r}
+accuracy(selected_frw)
+rmse_train(selected_frw)
+rmse_test(selected_frw)
+```
+
+That's minimal improvement and we've added a lot of interactions. Let's look at VIFs bigger than 5:
+
+```{r}
+car::vif(selected_frw) > 5
+```
 
 *The methods section should contain the bulk of your “work.” This section will contain the bulk of the R code that is used to generate the results. Your R code is not expected to be perfect idiomatic R, but it is expected to be understood by a reader without too much effort. Use RMarkdown and code comments to your advantage to explain your code if needed.*
 
