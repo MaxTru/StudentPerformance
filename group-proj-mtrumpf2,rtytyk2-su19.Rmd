@@ -180,14 +180,8 @@ accuracy = function(model) {
   mean(round(predict(model, newdata = student_tst)) != student_tst$G3)
 }
 
-rmse_train = function(model) {
-  predicted = predict(model, student_trn)
-  sqrt(mean((student_trn$G3 - predicted) ^ 2))
-}
-
-rmse_test = function(model) {
-  predicted = predict(model, student_tst)
-  sqrt(mean((student_tst$G3 - predicted) ^ 2))
+loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
 }
 
 influence = function(model, alpha = 0.01) {
@@ -230,8 +224,7 @@ Now let's see how our model does on the test set:
 
 ```{r}
 accuracy(add_mod3)
-rmse_train(add_mod3)
-rmse_test(add_mod3)
+loocv_rmse(add_mod3)
 ```
 
 $81\%$ is a good start, now let's start searching for a better model using `AIC`:
@@ -244,8 +237,7 @@ coef(selected_frw)
 
 ```{r}
 accuracy(selected_frw)
-rmse_train(selected_frw)
-rmse_test(selected_frw)
+loocv_rmse(selected_frw)
 ```
 
 That's minimal improvement and we've added a lot of interactions. Let's look at VIFs bigger than 5:
