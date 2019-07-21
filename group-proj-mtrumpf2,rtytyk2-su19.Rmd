@@ -234,20 +234,40 @@ The full model does a good start with $81\%$ accuracy on train data, now let's s
 
 ```{r}
 scope = formula(lm(G3 ~ (. - G2 - G1) ^ 2, data = student_trn))
-selected_frw = step(add_mod3, scope = scope, direction = "forward", trace = 0)
-coef(selected_frw)
+selected_frw_full = step(add_mod3, scope = scope, direction = "forward", trace = 0)
+coef(selected_frw_full)
 ```
 
 ```{r}
-accuracy(selected_frw)
-loocv_rmse(selected_frw)
+accuracy(selected_frw_full)
+loocv_rmse(selected_frw_full)
 ```
 
 That's minimal improvement and we've added a lot of interactions. Let's look at VIFs bigger than 5:
 
 ```{r}
-car::vif(selected_frw) > 5
+car::vif(selected_frw_full) > 5
 ```
+
+The large majority of predictors has a suspicious high VIF. 
+
+Let's try to use `BIC` for model selection to improve this.
+
+```{r}
+n = nrow(student_trn)
+scope = formula(lm(G3 ~ (. - G2 - G1) ^ 2, data = student_trn))
+selected_frw_full_bic = step(add_mod3, scope = scope, direction = "forward", trace = 0, k = log(n))
+coef(selected_frw_full_bic)
+```
+
+```{r}
+accuracy(selected_frw_full_bic)
+loocv_rmse(selected_frw_full_bic)
+```
+
+By using `BIC` for model selection, we improved our model in test accuracy as well as in $LOOCV$ while maintaining a quite low $p$ of ``r length(coef(selected_frw_full_bic))`` (as compared to ``r length(coef(selected_frw_full))`` for the full model when using `AIC`).
+
+Since the high amount of VIFs > 5 is suspicious, let's go back to our similarly well performing smaller model and see how this can be improved:
 
 *The methods section should contain the bulk of your “work.” This section will contain the bulk of the R code that is used to generate the results. Your R code is not expected to be perfect idiomatic R, but it is expected to be understood by a reader without too much effort. Use RMarkdown and code comments to your advantage to explain your code if needed.*
 
