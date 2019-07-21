@@ -17,6 +17,7 @@ options(scipen = 1, digits = 4, width = 80, fig.align = "center")
 library(readr)
 library(boot)
 library(ggplot2)
+library(car)
 ```
 
 # Introduction
