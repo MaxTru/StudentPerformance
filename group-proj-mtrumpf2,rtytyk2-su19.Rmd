@@ -134,7 +134,7 @@ student[factorCols]  =lapply(student[factorCols], factor)  ## as.factor() could 
 
 ## Data overview
 
-Evalaute correlation
+Evaluate correlation
 ```{r}
 # Evaluate correlation
 cor_matrix = cor(student[, sapply(student, is.numeric)])
@@ -147,17 +147,18 @@ There are ``r sum(cor_matrix > 0.7 & cor_matrix < 1.0)`` pairs of numeric attrib
 Visualize distribution of response attribute
 ```{r}
 hist(student$G3,   
-     xlab   = "G3 grade (student performance)",
-     main   = "Histogram of G3",
-     breaks = 20,
-     xlim   = c(0, 20),
-     col    = "dodgerblue",
-     border = "black")
+     xlab        = "G3 grade (student performance)",
+     main        = "Histogram of G3",
+     breaks      = 20,
+     xlim        = c(0, 20),
+     col         = "dodgerblue",
+     border      = "black",
+     probability = TRUE)
+curve(dnorm(x, mean = mean(student$G3), sd = sd(student$G3)), col = "green", add = TRUE, lwd = 2)
+points(dpois(x = 0:20, lambda = 10), col = "orange", pch = 20, cex = 2)
 ```
 
-From a visual inspection, the response seems to follow a Poisson distribution (except for the peak at `G3 = 0`).
-
-# TODO: Discuss with Rafal. We probably need to model GLM with Poisson distribution. This is new for us. Just FYI...
+From a visual inspection, the response could either follow a normal (green curve) or a Poisson distribution (orange points). Since there is not a large delta of the "fit", we will continue with using **Linear Regression Models** over **Generalized Linear Models with link function for Poisson distribution**.
 
 *The methods section should contain the bulk of your “work.” This section will contain the bulk of the R code that is used to generate the results. Your R code is not expected to be perfect idiomatic R, but it is expected to be understood by a reader without too much effort. Use RMarkdown and code comments to your advantage to explain your code if needed.*
 
