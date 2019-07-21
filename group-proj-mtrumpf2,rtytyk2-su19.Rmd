@@ -243,7 +243,6 @@ The full model does a good start with $81\%$ accuracy on train data, now let's s
 ```{r}
 scope = formula(lm(G3 ~ (. - G2 - G1) ^ 2, data = student_trn))
 selected_frw_full = step(add_mod3, scope = scope, direction = "forward", trace = 0)
-coef(selected_frw_full)
 ```
 
 ```{r}
