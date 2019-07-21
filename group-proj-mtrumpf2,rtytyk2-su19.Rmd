@@ -134,6 +134,13 @@ factorCols     = c("sex", "famsize", "Pstatus", "Mjob", "Fjob", "reason", "guard
 student[factorCols]  =lapply(student[factorCols], factor)  ## as.factor() could also be used
 ```
 
+Also we will remove the `failures` predictor, since the amount of failures is already *poor performance* (which we want to predict):
+
+```{r}
+student$failures = NULL
+```
+
+
 ## Data overview
 
 Evaluate correlation
@@ -205,12 +212,13 @@ We're finding `G2` and `G1` as being very influential for the outcome of `G3`. T
 ```{r}
 add_mod2 = lm(G3 ~ . - G2 - G1, data = student_trn)
 influence(add_mod2)
+coef(add_mod2)
 ```
 
-We're discovering `school`, `failures`, `higher`, `health` are being the most influential predictors, rejecting null hypothesis for any reasonable $\alpha$ level. Let's build a model out of those predictors:
+We're discovering `school`, `sex`, `studytime`, `schoolsup` and `higher` are being the most influential predictors, rejecting null hypothesis for any reasonable $\alpha$ level. Let's build a model out of those predictors:
 
 ```{r}
-add_mod3 = lm(G3 ~ school + failures + higher + health, data = student_trn)
+add_mod3 = lm(G3 ~ school + sex + studytime + schoolsup + higher, data = student_trn)
 ```
 
 And compare it to the full additive model that has `G2` and `G1` removed:
@@ -219,7 +227,7 @@ And compare it to the full additive model that has `G2` and `G1` removed:
 anova(add_mod3, add_mod2)$`Pr(>F)`[2]
 ```
 
-We reject null hypothesis. The more complex model performs better.
+We reject null hypothesis at $\alpha = 0.5$. The more complex model performs better.
 
 However, we also need to check how the models perform on unseen data:
 
@@ -228,7 +236,7 @@ c(accuracy(add_mod2), accuracy(add_mod3))
 c(loocv_rmse(add_mod2), loocv_rmse(add_mod3))
 ```
 
-The simpler model performs slightly better on unseen data. However, there is no big delta. So we will at first continue with our full model.
+The complex model has better test accuarcy, but the simpler model performs slightly better $LOOCV$. However, there is no big delta. So we will at first continue with our full model and later come back to the small model.
 
 The full model does a good start with $81\%$ accuracy on train data, now let's start searching for a better model using `AIC`:
 
@@ -267,7 +275,9 @@ loocv_rmse(selected_frw_full_bic)
 
 By using `BIC` for model selection, we improved our model in test accuracy as well as in $LOOCV$ while maintaining a quite low $p$ of ``r length(coef(selected_frw_full_bic))`` (as compared to ``r length(coef(selected_frw_full))`` for the full model when using `AIC`).
 
-Since the high amount of VIFs > 5 is suspicious, let's go back to our similarly well performing smaller model and see how this can be improved:
+However, we can still not beat the full model, but we get closer.
+
+# TODO: better model is far too big I think. Let's further explore how to get to a small but good model.
 
 *The methods section should contain the bulk of your “work.” This section will contain the bulk of the R code that is used to generate the results. Your R code is not expected to be perfect idiomatic R, but it is expected to be understood by a reader without too much effort. Use RMarkdown and code comments to your advantage to explain your code if needed.*
 
