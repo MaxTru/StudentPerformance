@@ -219,16 +219,18 @@ And compare it to the full additive model that has `G2` and `G1` removed:
 anova(add_mod3, add_mod2)$`Pr(>F)`[2]
 ```
 
-We reject null hypothesis. There are other predictors that we should consider and we'll use our third model to start searching for improvement.
+We reject null hypothesis. The more complex model performs better.
 
-Now let's see how our model does on the test set:
+However, we also need to check how the models perform on unseen data:
 
 ```{r}
-accuracy(add_mod3)
-loocv_rmse(add_mod3)
+c(accuracy(add_mod2), accuracy(add_mod3))
+c(loocv_rmse(add_mod2), loocv_rmse(add_mod3))
 ```
 
-$81\%$ is a good start, now let's start searching for a better model using `AIC`:
+The simpler model performs slightly better on unseen data. However, there is no big delta. So we will at first continue with our full model.
+
+The full model does a good start with $81\%$ accuracy on train data, now let's start searching for a better model using `AIC`:
 
 ```{r}
 scope = formula(lm(G3 ~ (. - G2 - G1) ^ 2, data = student_trn))
