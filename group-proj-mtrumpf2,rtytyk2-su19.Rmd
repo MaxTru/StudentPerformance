@@ -192,7 +192,7 @@ influence = function(model, alpha = 0.01) {
 
 ## Initial model evaluation
 
-Now we'll build full additive model using and compare P-values to $\alpha=0.05$:
+Now we'll build full additive model using and compare P-values to $\alpha=0.01$:
 
 ```{r}
 full_add_mod = lm(G3 ~ ., data = student_trn)
