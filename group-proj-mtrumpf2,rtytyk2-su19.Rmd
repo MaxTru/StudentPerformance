@@ -18,6 +18,7 @@ library(readr)
 library(boot)
 library(ggplot2)
 library(car)
+library(knitr)
 ```
 
 # Introduction
@@ -42,7 +43,7 @@ The original data provides two datasets covering two distinct subjects: Mathemat
 
 The main attributes to be used are the following:
 
-* Main response: **G3 - final grade**
+* Main response: **G1 - first period grade, G2 - second period grade, G3 - final grade** (We will explore which of these is to be used as main response. We also suspect a high multicollinearity, so we will only include one of these and exclude the others as predictors.)
 * Main predictors
     * **Sex** (categorial)
     * **Age** (numeric)
@@ -102,7 +103,6 @@ The dataset was collected by Paulo Cortez, University of Minho, Guimarães, Port
 
 First we will load the data
 ```{r message=FALSE}
-#student = read_delim("data/student-por.csv", ";", escape_double = FALSE, trim_ws = TRUE)
 student = read.csv("data/student-por.csv", header = TRUE, sep = ";")
 head(student)
 ```
@@ -121,25 +121,12 @@ str(student)
 
 There are two important observations from the structure from the data:
 
-1. Various attributes are clearly categorial predictors (e.g., `romantic (yes, no)`).
+1. Various attributes are clearly categorial predictors (e.g., `romantic (yes, no)`). They were already correctly captured as `factors` during data import, so no further action needed.
 2. Some attributes could either be modeled as categorial or as numeric predictors (e.g., `traveltime`, `studytime`).
 
 For now we will:
 
-* Convert the clear categorial predictors (e.g., `romantic (yes, no)`) to factors for easier later usage.
 * Keep the debateable numeric predictors (e.g., `traveltime (1, 2, 3, 4, 5)`) as numeric predictors. Generally this should be okay, since the numbers represent a clear order (they represent `very low` to `very high`). However, it needs to be considered when interpreting the results that the model using these numeric attributes will force the average change of the response between the different values to be the same (e.g., the average change of the response between a student with `traveltime = 1 (very low)` and another student with `traveltime = 2 (low)` will be the same as between a student with `traveltime = 4 (high)` and another student with `traveltime = 5 (very high)`.
-
-Perform the discussed factor conversion
-```{r, eval=FALSE}
-factorCols     = c("sex", "famsize", "Pstatus", "Mjob", "Fjob", "reason", "guardian", "schoolsup", "famsup", "paid", "activities", "nursery", "higher", "internet", "romantic")
-student[factorCols]  =lapply(student[factorCols], factor)  ## as.factor() could also be used
-```
-
-Also we will remove the `failures` predictor, since the amount of failures is already *poor performance* (which we want to predict):
-
-```{r, eval=FALSE}
-student$failures = NULL
-```
 
 
 ## Data overview
@@ -151,9 +138,9 @@ cor_matrix = cor(student[, sapply(student, is.numeric)])
 which( cor_matrix > 0.7 & cor_matrix < 1.0, arr.ind = T)
 ```
 
-There are ``r sum(cor_matrix > 0.7 & cor_matrix < 1.0)`` pairs of numeric attributes with a high correlation of above `0.7`. However, the are `G1`, `G2` and `G3`. We will use the final grade `G3` as a predictor and ignore the others. Therefore we don't expect mutlicollinearity issues.
+There are ``r sum(cor_matrix > 0.7 & cor_matrix < 1.0)`` pairs of numeric attributes with a high correlation of above `0.7`. However, they are `G1`, `G2` and `G3` (as we expected). We will use one of the grades as a response and ignore the others. Therefore we don't expect mutlicollinearity issues.
 
-Visualize distribution of response attribute
+Visualize distribution of response attribute `G3`
 ```{r}
 hist(student$G3,   
      xlab        = "G3 grade (student performance)",
@@ -175,12 +162,20 @@ We'll split our dataset into train/test sets:
 
 ```{r}
 set.seed(42)
-trn_idx = sample(nrow(student), round(nrow(student)*.8))
+#trn_idx = sample(nrow(student), round(nrow(student)*.8))
+# To ensure consistent results across linux and Windows we hard code the randomly generated idx
+trn_idx = c(594, 608, 186, 537, 414, 335, 474, 87, 422, 452, 293, 459, 596, 163, 294, 637, 620, 75, 300, 354, 569, 88, 621, 593, 52, 321, 244, 564, 278, 519, 457, 502, 240, 423, 3, 512, 5, 128, 554, 374, 232, 265, 23, 590, 262, 579, 536, 386, 584, 372, 200, 208, 238, 468, 24, 445, 402, 102, 155, 304, 398, 578, 446, 332, 498, 111, 159, 482, 403, 140, 25, 82, 125, 277, 114, 413, 613, 215, 635, 1, 331, 90, 204, 366, 439, 318, 132, 51, 49, 171, 610, 570, 117, 633, 514, 407, 185, 285, 410, 341, 344, 120, 119, 213, 555, 524, 626, 589, 290, 2, 329, 451, 404, 243, 287, 535, 558, 190, 326, 440, 189, 217, 303, 311, 378, 207, 481, 503, 122, 377, 469, 313, 327, 484, 438, 299, 641, 59, 391, 319, 76, 41, 236, 395, 371, 412, 86, 475, 148, 632, 359, 162, 388, 196, 336, 384, 93, 15, 67, 334, 458, 269, 571, 96, 260, 642, 219, 153, 56, 568, 350, 197, 198, 229, 567, 65, 511, 280, 375, 362, 431, 646, 149, 121, 346, 347, 425, 367, 62, 133, 480, 360, 614, 619, 33, 604, 241, 562, 495, 330, 542, 609, 381, 477, 71, 478, 429, 572, 112, 115, 597, 552, 501, 27, 444, 365, 249, 582, 507, 494, 211, 74, 448, 551, 134, 348, 130, 79, 21, 104, 437, 491, 127, 8, 645, 490, 36, 499, 228, 173, 28, 230, 29, 522, 223, 195, 643, 61, 201, 520, 463, 500, 108, 443, 9, 315, 44, 212, 224, 242, 279, 48, 466, 566, 193, 625, 333, 513, 353, 337, 430, 297, 560, 379, 586, 126, 548, 151, 178, 137, 172, 19, 69, 489, 373, 63, 505, 7, 123, 11, 312, 605, 113, 138, 547, 32, 268, 546, 376, 12, 169, 591, 421, 575, 606, 624, 135, 55, 110, 105, 37, 471, 168, 630, 649, 526, 99, 528, 545, 517, 142, 616, 47, 92, 184, 527, 116, 272, 427, 453, 295, 533, 640, 417, 352, 600, 380, 383, 254, 91, 316, 611, 246, 601, 13, 305, 541, 357, 603, 274, 563, 369, 22, 561, 483, 580, 401, 627, 145, 370, 585, 188, 81, 281, 325, 166, 175, 261, 550, 534, 26, 638, 396, 308, 496, 648, 523, 30, 16, 225, 157, 559, 98, 449, 583, 338, 389, 253, 45, 607, 473, 136, 349, 456, 515, 577, 245, 476, 139, 368, 6, 612, 156, 420, 216, 436, 239, 581, 464, 493, 322, 251, 57, 400, 35, 574, 543, 181, 504, 14, 623, 306, 405, 255, 361, 17, 340, 509, 432, 465, 302, 355, 267, 250, 599, 4, 89, 296, 525, 592, 258, 192, 222, 177, 461, 95, 276, 164, 399, 345, 406, 382, 356, 328, 80, 60, 50, 275, 556, 161, 266, 492, 424, 408, 576, 118, 256, 235, 72, 247, 364, 622, 289, 518, 199, 472, 307, 180, 301, 639, 40, 97, 141, 553, 419, 428, 146, 508, 647, 416, 298, 77, 460, 390, 544, 203, 557, 450, 263, 573, 320, 252, 158, 218, 259, 129, 83, 467, 248, 234, 539, 107, 538, 42, 644, 282, 565, 487, 46)
 student_trn = student[trn_idx, ]
 student_tst = student[-trn_idx, ]
 ```
 
-## Diagnostics
+## Linear and Logistic Regression
+
+We will explore formulating the problem as linear (predict the grade) as well as logistic (predict `pass/fail`) problem.
+
+### Linear regression
+
+#### Diagnostics
 
 And provide a set function for diagnostics of the model:
 
@@ -214,7 +209,7 @@ accuracy(baseline_mod)
 
 It would get an accuracy score of ``r accuracy(baseline_mod)``, which we wil try to beat.
 
-## Initial model evaluation
+#### Initial model evaluation {#initialModelEvalLinear}
 
 Now we'll build full additive model using and compare P-values to $\alpha=0.01$:
 
@@ -230,10 +225,10 @@ large_add_mod = lm(G3 ~ . - G2 - G1, data = student_trn)
 influence(large_add_mod)
 ```
 
-We're discovering `school`, `sex`, `studytime`, `schoolsup` and `higher` are being the most influential predictors, rejecting null hypothesis for any reasonable $\alpha$ level. Let's build a model out of those predictors:
+We're discovering `school`, `studytime`, `failures`, `higher` and `romantic` are being the most influential predictors, rejecting null hypothesis for any reasonable $\alpha$ level. Let's build a model out of those predictors:
 
 ```{r}
-small_add_mod = lm(G3 ~ school + sex + studytime + schoolsup + higher, data = student_trn)
+small_add_mod = lm(G3 ~ school + studytime + failures + higher + romantic, data = student_trn)
 coef(small_add_mod)
 ```
 
@@ -243,44 +238,208 @@ And compare it to the full additive model that has `G2` and `G1` removed:
 anova(large_add_mod, small_add_mod)$`Pr(>F)`[2]
 ```
 
-We reject null hypothesis at $\alpha = 0.5$. The more complex model performs better. However, at $\alpha = 0.1$ we would fail to reject the null hypothesis and favor the smaller additive model. Because of this not too large difference, we need to take performance statistics ($LOOCV$ and $accuracy$) into account for choosing our model.
+We reject null hypothesis at $\alpha = 0.5$. The more complex model performs better. 
 
-Let's check how the models perform on unseen data:
+But let's also check how the models perform on unseen data:
 
 ```{r}
-perf = data.frame(c(accuracy(large_add_mod), accuracy(small_add_mod)),
-                  c(loocv_rmse(large_add_mod), loocv_rmse(small_add_mod)))
+perf = data.frame(c(accuracy(full_add_mod), accuracy(large_add_mod), accuracy(small_add_mod)),
+                  c(loocv_rmse(full_add_mod), loocv_rmse(large_add_mod), loocv_rmse(small_add_mod)))
 colnames(perf) = c("Accuracy on test set", "LOOCV RMSE")
-row.names(perf) = c("Large additive model", "Small additive model")
+row.names(perf) = c("Full additive model (incl. G1 and G2)", "Large additive model (excl. G1 and G2)", "Small additive model")
 perf
 ```
 
-The small additive model has better test accuarcy as well as $LOOCV$ RMSE. Both model are above the accuracy baseline of ``r accuracy(baseline_mod)``. 
+Also here the large additive model (excluding `G1` and `G2`) performs better than the small additive model. The model which includes `G1` and `G2` performs the best (as expected), so past performances are the most important predictor for the final term performance.
 
-So we will continue our search based on the small additive model
+All models are above the accuracy baseline of ``r accuracy(baseline_mod)``. 
 
-Now let's start searching for a better model using `AIC`:
+We will continue our search based on the large additive model and based on the full additive model.
+
+Let's start searching for a better model using `AIC` based on the large additive model:
 
 ```{r}
-scope = formula(lm(G3 ~ (school + sex + studytime + schoolsup + higher) ^ 3, data = student_trn))
-selected_frw_full = step(small_add_mod, scope = scope, direction = "forward", trace = 0)
+scope = formula(lm(G3 ~ (. - G1 - G2) ^ 3, data = student_trn))
+int_mod_large_AIC = step(small_add_mod, scope = scope, direction = "forward", trace = 0)
 ```
 
 ```{r}
-accuracy(selected_frw_full)
-loocv_rmse(selected_frw_full)
+accuracy(int_mod_large_AIC)
+loocv_rmse(int_mod_large_AIC)
 ```
 
-It seems quite hopeless to find a good model using only selected variables. Let's try putting G2,G1 and failures back in the model and do an analysis based on p-values. We've reached this interaction model:
+Using `AIC` we get a model which does not well perform on unseen data (ie overfitting), we will therefore switch to `BIC`.
 
 ```{r}
-int_mod = lm(G3 ~ (G2 + G1 + sex + age + absences + failures + famsize + paid + freetime + health) ^ 2 - 
-               G2:failures - paid - G2:absences - G1:age - failures:freetime - famsize:paid - age - absences:paid, 
-             data = student_trn)
-
-accuracy(int_mod)
-loocv_rmse(int_mod)
+n = nrow(student_trn)
+scope = formula(lm(G3 ~ (. - G1 - G2) ^ 3, data = student_trn))
+int_mod_large_BIC = step(small_add_mod, scope = scope, direction = "forward", trace = 0, k = log(n))
 ```
+
+```{r}
+accuracy(int_mod_large_BIC)
+loocv_rmse(int_mod_large_BIC)
+```
+
+We were able to improve our accuracy from ``r accuracy(large_add_mod)`` to ``r accuracy(int_mod_large_BIC)``.
+
+Based on the improved model, we will also try to do a polynomial transformation:
+
+```{r}
+int_pol_mod_large = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + higher + romantic + I(Medu ^ 2) + sex + schoolsup, data = student_trn)
+```
+
+```{r}
+accuracy(int_pol_mod_large)
+loocv_rmse(int_pol_mod_large)
+```
+
+The polynomial transformation did not deliver an improvement on unseen data for the large model (excl. `G1` and `G2`).
+
+Now let's do the same thing with the full model (including `G1` and `G2`). We will right aways start with `BIC` so to avoid overfitting (which we have seen before when using `AIC`):
+
+```{r}
+n = nrow(student_trn)
+scope = formula(lm(G3 ~ (.) ^ 3, data = student_trn))
+int_mod_full_BIC = step(small_add_mod, scope = scope, direction = "forward", trace = 0, k = log(n))
+```
+
+```{r}
+accuracy(int_mod_full_BIC)
+loocv_rmse(int_mod_full_BIC)
+```
+
+We were able to improve our accuracy from ``r accuracy(full_add_mod)`` to ``r accuracy(int_mod_full_BIC)``.
+
+Based on the improved model, we will also try to do a polynomial transformation:
+
+```{r}
+int_pol_mod_full = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + I(G2 ^ 2) + I(G1 ^ 2) + higher + romantic + higher:romantic + G2:G1, data = student_trn)
+```
+
+```{r}
+accuracy(int_pol_mod_full)
+loocv_rmse(int_pol_mod_full)
+```
+
+This could further increase our accuracy from ``r accuracy(full_add_mod)`` to ``r accuracy(int_pol_mod_full)``.
+
+#### Regression diagnostics
+
+Based on the best initial models, we will perform regression diagnostics to try to further improve performance.
+
+We will start with the full interaction polynomial model.
+
+At first let's see whether we have influential observations:
+
+```{r}
+influential_obs_idx = cooks.distance(int_pol_mod_full) > 4 / length(cooks.distance(int_pol_mod_full))
+sum(influential_obs_idx)
+```
+
+We will remove these ``r sum(influential_obs_idx)`` observations.
+
+```{r}
+student_trn_cleaned = student_trn[!influential_obs_idx, ]
+```
+
+```{r}
+int_pol_mod_full_cleaned = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + I(G2 ^ 2) + I(G1 ^ 2) + higher + romantic + higher:romantic + G2:G1, data = student_trn_cleaned)
+```
+
+```{r}
+accuracy(int_pol_mod_full_cleaned)
+loocv_rmse(int_pol_mod_full_cleaned)
+```
+
+We were not able to improve the performance.
+
+Let's try the same thing on our large model (excl. `G1` and `G2`).
+
+```{r}
+influential_obs_idx = cooks.distance(int_mod_large_BIC) > 4 / length(cooks.distance(int_mod_large_BIC))
+sum(influential_obs_idx)
+```
+
+We will remove these ``r sum(int_mod_large_BIC)`` observations.
+
+```{r}
+student_trn_cleaned = student_trn[!influential_obs_idx, ]
+```
+
+```{r}
+int_mod_large_BIC_cleaned = lm(formula = G3 ~ school + studytime + failures + higher + romantic + 
+    Medu + sex + schoolsup, data = student_trn_cleaned)
+```
+
+```{r}
+accuracy(int_mod_large_BIC_cleaned)
+loocv_rmse(int_mod_large_BIC_cleaned)
+```
+
+For this model, the removal of unusual observations led to a performance increase.
+
+Let's also take a look at fitted-vs-residuals and QQ-plot. At first we will define a `diagnostics` function, which will (1) plot fitted-vs-residuals plot, (2) plot qq-plot, (3) calculate sw-test, (4) calcualted bp-test. (function will not be knitted to html)
+
+```{r message=FALSE}
+library(lmtest)
+
+diagnostics = function(model, pcol = "grey", lcol = "dodgerblue", alpha = 0.05, plotit = TRUE, testit = TRUE) {
+  if (plotit == TRUE) {
+    par(mfrow = c(1, 2))
+    
+    # Fitted vs residuals plot
+    plot(fitted(model), resid(model), 
+         col = pcol, 
+         pch = 20,
+         xlab = "Fitted", 
+         ylab = "Residuals", 
+         main = "Fitted vs residuals plot")
+    abline(h = 0, 
+           col = lcol, 
+           lwd = 2)
+    
+    # QQ-plot
+    qqnorm(resid(model), 
+           main = "Normal Q-Q Plot", 
+           col = pcol)
+    qqline(resid(model), 
+           col = lcol, 
+           lwd = 2)
+  }
+  if (testit == TRUE) {
+    p_sw = shapiro.test(resid(model))$p.value
+    if (p_sw < alpha) {
+      decision_sw = "Reject | Data not sampled from normal"
+    } else {
+      decision_sw = "Fail to Reject | Data sampled from normal"
+    }
+    p_bp = bptest(model)$p.value
+    if (p_bp < alpha) {
+      decision_bp = "Reject | Question equal variance"
+    } else {
+      decision_bp = "Fail to Reject | Likely equal variance"
+    }
+    list("p_val_sw" = p_sw, "decision_sw" = decision_sw, "p_val_bp" = p_bp, "decision_bp" = decision_bp)
+  }
+}
+```
+
+Let's analyse our so far best model:
+
+```{r}
+diagnostics(int_pol_mod_full)
+```
+
+And also the cleaned version of our so far best model:
+
+```{r}
+diagnostics(int_pol_mod_full_cleaned)
+```
+
+While the plots for our so far best model do not look so good, most of the issues could be resolved by removing unusual observations. However, since the model with the unusual observations removed performs significantly worse on unseen data, we will stick to the initial version (without unusual observations removed).
+
+### Logistic regression
 
 I think our main difficulty is in the fact that the score is a number of 0..19 which is quite hard to pinpoint exactly having limited number of samples.
 
@@ -304,8 +463,6 @@ loocv_rmse(bern_full)
 
 90%
 
-# TODO: better model is far too big I think. Let's further explore how to get to a small but good model.
-
 *The methods section should contain the bulk of your “work.” This section will contain the bulk of the R code that is used to generate the results. Your R code is not expected to be perfect idiomatic R, but it is expected to be understood by a reader without too much effort. Use RMarkdown and code comments to your advantage to explain your code if needed.*
 
 *This section should contain any information about data preparation that is performed to the original data before modelling. Then you will apply methods seen in class, which may include some of the following but are not limited to:*
@@ -321,6 +478,30 @@ loocv_rmse(bern_full)
 *Your task is not to use as many methods as possible. Your task is to use appropriate methods to find a good model that can correctly answer a question about the dataset, and then to communicate your result effectively.*
 
 # Results
+
+## Linear regression
+
+The following table shows the $LOOCV-RMSE$ and **accuracy** on test data of the best initial models we built (see [Initial Model Evaluation](#initialModelEvalLinear)) using linear regression:
+
+```{r, echo = FALSE}
+results_df = rbind(
+  "Full (incl. G1 and G2) polynomial, interaction model" = c(accuracy(int_pol_mod_full), loocv_rmse(int_pol_mod_full)),
+  "Large (excl. G1 and G2) additive model without unusual observations" = c(accuracy(int_mod_large_BIC_cleaned), loocv_rmse(int_mod_large_BIC_cleaned)),
+  "Large (excl. G1 and G2) additive model" = c(accuracy(int_mod_large_BIC), loocv_rmse(int_mod_large_BIC)),
+  "Small additive model" = c(accuracy(small_add_mod), loocv_rmse(small_add_mod)),
+  "Baseline model" = c(accuracy(baseline_mod), loocv_rmse(baseline_mod))
+)
+colnames(results_df) = c("Accuracy on test data", "LOOCV-RMSE")
+
+
+kable(results_df,
+      format = 'markdown',
+      digits = 3
+      )
+```
+
+
+## Logistic regression
 
 *The results section should contain numerical or graphical summaries of your results. You should report a final model you have chosen. There is not necessarily one, singular correct model, but certainly some methods and models are better than others in certain situations. You may use any methods we studied this semester to complete this task, and provide evidence that your final choice of model is a good one.*
 
