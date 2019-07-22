@@ -211,7 +211,7 @@ Our baseline model would always predict ``r coef(baseline_mod)[[1]]``.
 accuracy(baseline_mod)
 ```
 
-It would get a pretty high accuracy score of ``r accuracy(baseline_mod)``, which we wil try to beat.
+It would get an accuracy score of ``r accuracy(baseline_mod)``, which we wil try to beat.
 
 ## Initial model evaluation
 
