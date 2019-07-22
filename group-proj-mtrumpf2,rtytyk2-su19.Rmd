@@ -127,12 +127,6 @@ For now we will:
 
 * Keep the debateable numeric predictors (e.g., `traveltime (1, 2, 3, 4, 5)`) as numeric predictors. Generally this should be okay, since the numbers represent a clear order (they represent `very low` to `very high`). However, it needs to be considered when interpreting the results that the model using these numeric attributes will force the average change of the response between the different values to be the same (e.g., the average change of the response between a student with `traveltime = 1 (very low)` and another student with `traveltime = 2 (low)` will be the same as between a student with `traveltime = 4 (high)` and another student with `traveltime = 5 (very high)`.
 
-Also we will remove the `failures` predictor, since the amount of failures is already *poor performance* (which we want to predict):
-
-```{r, eval=FALSE}
-student$failures = NULL
-```
-
 
 ## Data overview
 
