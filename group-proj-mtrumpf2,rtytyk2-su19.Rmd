@@ -18,6 +18,7 @@ library(readr)
 library(boot)
 library(ggplot2)
 library(car)
+library(knitr)
 ```
 
 # Introduction
@@ -208,7 +209,7 @@ accuracy(baseline_mod)
 
 It would get an accuracy score of ``r accuracy(baseline_mod)``, which we wil try to beat.
 
-#### Initial model evaluation
+#### Initial model evaluation {#initialModelEvalLinear}
 
 Now we'll build full additive model using and compare P-values to $\alpha=0.01$:
 
@@ -325,6 +326,119 @@ This could further increase our accuracy from ``r accuracy(full_add_mod)`` to ``
 
 #### Regression diagnostics
 
+Based on the best initial models, we will perform regression diagnostics to try to further improve performance.
+
+We will start with the full interaction polynomial model.
+
+At first let's see whether we have influential observations:
+
+```{r}
+influential_obs_idx = cooks.distance(int_pol_mod_full) > 4 / length(cooks.distance(int_pol_mod_full))
+sum(influential_obs_idx)
+```
+
+We will remove these ``r sum(influential_obs_idx)`` observations.
+
+```{r}
+student_trn_cleaned = student_trn[!influential_obs_idx, ]
+```
+
+```{r}
+int_pol_mod_full_cleaned = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + I(G2 ^ 2) + I(G1 ^ 2) + higher + romantic + higher:romantic + G2:G1, data = student_trn_cleaned)
+```
+
+```{r}
+accuracy(int_pol_mod_full_cleaned)
+loocv_rmse(int_pol_mod_full_cleaned)
+```
+
+We were not able to improve the performance.
+
+Let's try the same thing on our large model (excl. `G1` and `G2`).
+
+```{r}
+influential_obs_idx = cooks.distance(int_mod_large_BIC) > 4 / length(cooks.distance(int_mod_large_BIC))
+sum(influential_obs_idx)
+```
+
+We will remove these ``r sum(int_mod_large_BIC)`` observations.
+
+```{r}
+student_trn_cleaned = student_trn[!influential_obs_idx, ]
+```
+
+```{r}
+int_mod_large_BIC_cleaned = lm(formula = G3 ~ school + studytime + failures + higher + romantic + 
+    Medu + sex + schoolsup, data = student_trn_cleaned)
+```
+
+```{r}
+accuracy(int_mod_large_BIC_cleaned)
+loocv_rmse(int_mod_large_BIC_cleaned)
+```
+
+For this model, the removal of unusual observations led to a performance increase.
+
+Let's also take a look at fitted-vs-residuals and QQ-plot. At first we will define a `diagnostics` function, which will (1) plot fitted-vs-residuals plot, (2) plot qq-plot, (3) calculate sw-test, (4) calcualted bp-test. (function will not be knitted to html)
+
+```{r message=FALSE}
+library(lmtest)
+
+diagnostics = function(model, pcol = "grey", lcol = "dodgerblue", alpha = 0.05, plotit = TRUE, testit = TRUE) {
+  if (plotit == TRUE) {
+    par(mfrow = c(1, 2))
+    
+    # Fitted vs residuals plot
+    plot(fitted(model), resid(model), 
+         col = pcol, 
+         pch = 20,
+         xlab = "Fitted", 
+         ylab = "Residuals", 
+         main = "Fitted vs residuals plot")
+    abline(h = 0, 
+           col = lcol, 
+           lwd = 2)
+    
+    # QQ-plot
+    qqnorm(resid(model), 
+           main = "Normal Q-Q Plot", 
+           col = pcol)
+    qqline(resid(model), 
+           col = lcol, 
+           lwd = 2)
+  }
+  if (testit == TRUE) {
+    p_sw = shapiro.test(resid(model))$p.value
+    if (p_sw < alpha) {
+      decision_sw = "Reject | Data not sampled from normal"
+    } else {
+      decision_sw = "Fail to Reject | Data sampled from normal"
+    }
+    p_bp = bptest(model)$p.value
+    if (p_bp < alpha) {
+      decision_bp = "Reject | Question equal variance"
+    } else {
+      decision_bp = "Fail to Reject | Likely equal variance"
+    }
+    list("p_val_sw" = p_sw, "decision_sw" = decision_sw, "p_val_bp" = p_bp, "decision_bp" = decision_bp)
+  }
+}
+```
+
+Let's analyse our so far best model:
+
+```{r}
+diagnostics(int_pol_mod_full)
+```
+
+And also the cleaned version of our so far best model:
+
+```{r}
+diagnostics(int_pol_mod_full_cleaned)
+```
+
+While the plots for our so far best model do not look so good, most of the issues could be resolved by removing unusual observations. However, since the model with the unusual observations removed performs significantly worse on unseen data, we will stick to the initial version (without unusual observations removed).
+
 ### Logistic regression
 
 I think our main difficulty is in the fact that the score is a number of 0..19 which is quite hard to pinpoint exactly having limited number of samples.
@@ -364,6 +478,30 @@ loocv_rmse(bern_full)
 *Your task is not to use as many methods as possible. Your task is to use appropriate methods to find a good model that can correctly answer a question about the dataset, and then to communicate your result effectively.*
 
 # Results
+
+## Linear regression
+
+The following table shows the $LOOCV-RMSE$ and **accuracy** on test data of the best initial models we built (see [Initial Model Evaluation](#initialModelEvalLinear)) using linear regression:
+
+```{r, echo = FALSE}
+results_df = rbind(
+  "Full (incl. G1 and G2) polynomial, interaction model" = c(accuracy(int_pol_mod_full), loocv_rmse(int_pol_mod_full)),
+  "Large (excl. G1 and G2) additive model without unusual observations" = c(accuracy(int_mod_large_BIC_cleaned), loocv_rmse(int_mod_large_BIC_cleaned)),
+  "Large (excl. G1 and G2) additive model" = c(accuracy(int_mod_large_BIC), loocv_rmse(int_mod_large_BIC)),
+  "Small additive model" = c(accuracy(small_add_mod), loocv_rmse(small_add_mod)),
+  "Baseline model" = c(accuracy(baseline_mod), loocv_rmse(baseline_mod))
+)
+colnames(results_df) = c("Accuracy on test data", "LOOCV-RMSE")
+
+
+kable(results_df,
+      format = 'markdown',
+      digits = 3
+      )
+```
+
+
+## Logistic regression
 
 *The results section should contain numerical or graphical summaries of your results. You should report a final model you have chosen. There is not necessarily one, singular correct model, but certainly some methods and models are better than others in certain situations. You may use any methods we studied this semester to complete this task, and provide evidence that your final choice of model is a good one.*
 
