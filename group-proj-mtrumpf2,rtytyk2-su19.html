@@ -415,6 +415,7 @@ $(document).ready(function () {
 <li><a href="#diagnostics">Diagnostics</a></li>
 <li><a href="#initial-model-evaluation">Initial model evaluation</a></li>
 </ul></li>
+<li><a href="#todo-better-model-is-far-too-big-i-think.-lets-further-explore-how-to-get-to-a-small-but-good-model.">TODO: better model is far too big I think. Let’s further explore how to get to a small but good model.</a></li>
 <li><a href="#results">Results</a></li>
 <li><a href="#discussion">Discussion</a></li>
 <li><a href="#appendix">Appendix</a></li>
@@ -646,98 +647,77 @@ $(document).ready(function () {
 <div id="data-preparation" class="section level2">
 <h2>Data preparation</h2>
 <p>First we will load the data</p>
-<pre class="r"><code>student = read_delim(&quot;data/student-por.csv&quot;, &quot;;&quot;, escape_double = FALSE, trim_ws = TRUE)
+<pre class="r"><code>#student = read_delim(&quot;data/student-por.csv&quot;, &quot;;&quot;, escape_double = FALSE, trim_ws = TRUE)
+student = read.csv(&quot;data/student-por.csv&quot;, header = TRUE, sep = &quot;;&quot;)
 head(student)</code></pre>
-<pre><code>## # A tibble: 6 x 33
-##   school sex     age address famsize Pstatus  Medu  Fedu Mjob  Fjob  reason
-##   &lt;chr&gt;  &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; 
-## 1 GP     F        18 U       GT3     A           4     4 at_h… teac… course
-## 2 GP     F        17 U       GT3     T           1     1 at_h… other course
-## 3 GP     F        15 U       LE3     T           1     1 at_h… other other 
-## 4 GP     F        15 U       GT3     T           4     2 heal… serv… home  
-## 5 GP     F        16 U       GT3     T           3     3 other other home  
-## 6 GP     M        16 U       LE3     T           4     3 serv… other reput…
-## # … with 22 more variables: guardian &lt;chr&gt;, traveltime &lt;dbl&gt;, studytime &lt;dbl&gt;,
-## #   failures &lt;dbl&gt;, schoolsup &lt;chr&gt;, famsup &lt;chr&gt;, paid &lt;chr&gt;,
-## #   activities &lt;chr&gt;, nursery &lt;chr&gt;, higher &lt;chr&gt;, internet &lt;chr&gt;,
-## #   romantic &lt;chr&gt;, famrel &lt;dbl&gt;, freetime &lt;dbl&gt;, goout &lt;dbl&gt;, Dalc &lt;dbl&gt;,
-## #   Walc &lt;dbl&gt;, health &lt;dbl&gt;, absences &lt;dbl&gt;, G1 &lt;dbl&gt;, G2 &lt;dbl&gt;, G3 &lt;dbl&gt;</code></pre>
+<pre><code>##   school sex age address famsize Pstatus Medu Fedu     Mjob     Fjob     reason
+## 1     GP   F  18       U     GT3       A    4    4  at_home  teacher     course
+## 2     GP   F  17       U     GT3       T    1    1  at_home    other     course
+## 3     GP   F  15       U     LE3       T    1    1  at_home    other      other
+## 4     GP   F  15       U     GT3       T    4    2   health services       home
+## 5     GP   F  16       U     GT3       T    3    3    other    other       home
+## 6     GP   M  16       U     LE3       T    4    3 services    other reputation
+##   guardian traveltime studytime failures schoolsup famsup paid activities
+## 1   mother          2         2        0       yes     no   no         no
+## 2   father          1         2        0        no    yes   no         no
+## 3   mother          1         2        0       yes     no   no         no
+## 4   mother          1         3        0        no    yes   no        yes
+## 5   father          1         2        0        no    yes   no         no
+## 6   mother          1         2        0        no    yes   no        yes
+##   nursery higher internet romantic famrel freetime goout Dalc Walc health
+## 1     yes    yes       no       no      4        3     4    1    1      3
+## 2      no    yes      yes       no      5        3     3    1    1      3
+## 3     yes    yes      yes       no      4        3     2    2    3      3
+## 4     yes    yes      yes      yes      3        2     2    1    1      5
+## 5     yes    yes       no       no      4        3     2    1    2      5
+## 6     yes    yes      yes       no      5        4     2    1    2      5
+##   absences G1 G2 G3
+## 1        4  0 11 11
+## 2        2  9 11 11
+## 3        6 12 13 12
+## 4        0 14 14 14
+## 5        0 11 13 13
+## 6        6 12 12 13</code></pre>
 <p>Check whether we have any missing values</p>
 <pre class="r"><code>any(is.na(student))</code></pre>
 <pre><code>## [1] FALSE</code></pre>
 <p>No missing values, so continue as is.</p>
 <p>Validate that the attributes have the desired types</p>
 <pre class="r"><code>str(student)</code></pre>
-<pre><code>## Classes 'spec_tbl_df', 'tbl_df', 'tbl' and 'data.frame': 649 obs. of  33 variables:
-##  $ school    : chr  &quot;GP&quot; &quot;GP&quot; &quot;GP&quot; &quot;GP&quot; ...
-##  $ sex       : chr  &quot;F&quot; &quot;F&quot; &quot;F&quot; &quot;F&quot; ...
-##  $ age       : num  18 17 15 15 16 16 16 17 15 15 ...
-##  $ address   : chr  &quot;U&quot; &quot;U&quot; &quot;U&quot; &quot;U&quot; ...
-##  $ famsize   : chr  &quot;GT3&quot; &quot;GT3&quot; &quot;LE3&quot; &quot;GT3&quot; ...
-##  $ Pstatus   : chr  &quot;A&quot; &quot;T&quot; &quot;T&quot; &quot;T&quot; ...
-##  $ Medu      : num  4 1 1 4 3 4 2 4 3 3 ...
-##  $ Fedu      : num  4 1 1 2 3 3 2 4 2 4 ...
-##  $ Mjob      : chr  &quot;at_home&quot; &quot;at_home&quot; &quot;at_home&quot; &quot;health&quot; ...
-##  $ Fjob      : chr  &quot;teacher&quot; &quot;other&quot; &quot;other&quot; &quot;services&quot; ...
-##  $ reason    : chr  &quot;course&quot; &quot;course&quot; &quot;other&quot; &quot;home&quot; ...
-##  $ guardian  : chr  &quot;mother&quot; &quot;father&quot; &quot;mother&quot; &quot;mother&quot; ...
-##  $ traveltime: num  2 1 1 1 1 1 1 2 1 1 ...
-##  $ studytime : num  2 2 2 3 2 2 2 2 2 2 ...
-##  $ failures  : num  0 0 0 0 0 0 0 0 0 0 ...
-##  $ schoolsup : chr  &quot;yes&quot; &quot;no&quot; &quot;yes&quot; &quot;no&quot; ...
-##  $ famsup    : chr  &quot;no&quot; &quot;yes&quot; &quot;no&quot; &quot;yes&quot; ...
-##  $ paid      : chr  &quot;no&quot; &quot;no&quot; &quot;no&quot; &quot;no&quot; ...
-##  $ activities: chr  &quot;no&quot; &quot;no&quot; &quot;no&quot; &quot;yes&quot; ...
-##  $ nursery   : chr  &quot;yes&quot; &quot;no&quot; &quot;yes&quot; &quot;yes&quot; ...
-##  $ higher    : chr  &quot;yes&quot; &quot;yes&quot; &quot;yes&quot; &quot;yes&quot; ...
-##  $ internet  : chr  &quot;no&quot; &quot;yes&quot; &quot;yes&quot; &quot;yes&quot; ...
-##  $ romantic  : chr  &quot;no&quot; &quot;no&quot; &quot;no&quot; &quot;yes&quot; ...
-##  $ famrel    : num  4 5 4 3 4 5 4 4 4 5 ...
-##  $ freetime  : num  3 3 3 2 3 4 4 1 2 5 ...
-##  $ goout     : num  4 3 2 2 2 2 4 4 2 1 ...
-##  $ Dalc      : num  1 1 2 1 1 1 1 1 1 1 ...
-##  $ Walc      : num  1 1 3 1 2 2 1 1 1 1 ...
-##  $ health    : num  3 3 3 5 5 5 3 1 1 5 ...
-##  $ absences  : num  4 2 6 0 0 6 0 2 0 0 ...
-##  $ G1        : num  0 9 12 14 11 12 13 10 15 12 ...
-##  $ G2        : num  11 11 13 14 13 12 12 13 16 12 ...
-##  $ G3        : num  11 11 12 14 13 13 13 13 17 13 ...
-##  - attr(*, &quot;spec&quot;)=
-##   .. cols(
-##   ..   school = col_character(),
-##   ..   sex = col_character(),
-##   ..   age = col_double(),
-##   ..   address = col_character(),
-##   ..   famsize = col_character(),
-##   ..   Pstatus = col_character(),
-##   ..   Medu = col_double(),
-##   ..   Fedu = col_double(),
-##   ..   Mjob = col_character(),
-##   ..   Fjob = col_character(),
-##   ..   reason = col_character(),
-##   ..   guardian = col_character(),
-##   ..   traveltime = col_double(),
-##   ..   studytime = col_double(),
-##   ..   failures = col_double(),
-##   ..   schoolsup = col_character(),
-##   ..   famsup = col_character(),
-##   ..   paid = col_character(),
-##   ..   activities = col_character(),
-##   ..   nursery = col_character(),
-##   ..   higher = col_character(),
-##   ..   internet = col_character(),
-##   ..   romantic = col_character(),
-##   ..   famrel = col_double(),
-##   ..   freetime = col_double(),
-##   ..   goout = col_double(),
-##   ..   Dalc = col_double(),
-##   ..   Walc = col_double(),
-##   ..   health = col_double(),
-##   ..   absences = col_double(),
-##   ..   G1 = col_double(),
-##   ..   G2 = col_double(),
-##   ..   G3 = col_double()
-##   .. )</code></pre>
+<pre><code>## 'data.frame':    649 obs. of  33 variables:
+##  $ school    : Factor w/ 2 levels &quot;GP&quot;,&quot;MS&quot;: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ sex       : Factor w/ 2 levels &quot;F&quot;,&quot;M&quot;: 1 1 1 1 1 2 2 1 2 2 ...
+##  $ age       : int  18 17 15 15 16 16 16 17 15 15 ...
+##  $ address   : Factor w/ 2 levels &quot;R&quot;,&quot;U&quot;: 2 2 2 2 2 2 2 2 2 2 ...
+##  $ famsize   : Factor w/ 2 levels &quot;GT3&quot;,&quot;LE3&quot;: 1 1 2 1 1 2 2 1 2 1 ...
+##  $ Pstatus   : Factor w/ 2 levels &quot;A&quot;,&quot;T&quot;: 1 2 2 2 2 2 2 1 1 2 ...
+##  $ Medu      : int  4 1 1 4 3 4 2 4 3 3 ...
+##  $ Fedu      : int  4 1 1 2 3 3 2 4 2 4 ...
+##  $ Mjob      : Factor w/ 5 levels &quot;at_home&quot;,&quot;health&quot;,..: 1 1 1 2 3 4 3 3 4 3 ...
+##  $ Fjob      : Factor w/ 5 levels &quot;at_home&quot;,&quot;health&quot;,..: 5 3 3 4 3 3 3 5 3 3 ...
+##  $ reason    : Factor w/ 4 levels &quot;course&quot;,&quot;home&quot;,..: 1 1 3 2 2 4 2 2 2 2 ...
+##  $ guardian  : Factor w/ 3 levels &quot;father&quot;,&quot;mother&quot;,..: 2 1 2 2 1 2 2 2 2 2 ...
+##  $ traveltime: int  2 1 1 1 1 1 1 2 1 1 ...
+##  $ studytime : int  2 2 2 3 2 2 2 2 2 2 ...
+##  $ failures  : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ schoolsup : Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 2 1 2 1 1 1 1 2 1 1 ...
+##  $ famsup    : Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 1 2 1 2 2 2 1 2 2 2 ...
+##  $ paid      : Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ activities: Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 1 1 1 2 1 2 1 1 1 2 ...
+##  $ nursery   : Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 2 1 2 2 2 2 2 2 2 2 ...
+##  $ higher    : Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 2 2 2 2 2 2 2 2 2 2 ...
+##  $ internet  : Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 1 2 2 2 1 2 2 1 2 2 ...
+##  $ romantic  : Factor w/ 2 levels &quot;no&quot;,&quot;yes&quot;: 1 1 1 2 1 1 1 1 1 1 ...
+##  $ famrel    : int  4 5 4 3 4 5 4 4 4 5 ...
+##  $ freetime  : int  3 3 3 2 3 4 4 1 2 5 ...
+##  $ goout     : int  4 3 2 2 2 2 4 4 2 1 ...
+##  $ Dalc      : int  1 1 2 1 1 1 1 1 1 1 ...
+##  $ Walc      : int  1 1 3 1 2 2 1 1 1 1 ...
+##  $ health    : int  3 3 3 5 5 5 3 1 1 5 ...
+##  $ absences  : int  4 2 6 0 0 6 0 2 0 0 ...
+##  $ G1        : int  0 9 12 14 11 12 13 10 15 12 ...
+##  $ G2        : int  11 11 13 14 13 12 12 13 16 12 ...
+##  $ G3        : int  11 11 12 14 13 13 13 13 17 13 ...</code></pre>
 <p>There are two important observations from the structure from the data:</p>
 <ol style="list-style-type: decimal">
 <li>Various attributes are clearly categorial predictors (e.g., <code>romantic (yes, no)</code>).</li>
@@ -751,6 +731,8 @@ head(student)</code></pre>
 <p>Perform the discussed factor conversion</p>
 <pre class="r"><code>factorCols     = c(&quot;sex&quot;, &quot;famsize&quot;, &quot;Pstatus&quot;, &quot;Mjob&quot;, &quot;Fjob&quot;, &quot;reason&quot;, &quot;guardian&quot;, &quot;schoolsup&quot;, &quot;famsup&quot;, &quot;paid&quot;, &quot;activities&quot;, &quot;nursery&quot;, &quot;higher&quot;, &quot;internet&quot;, &quot;romantic&quot;)
 student[factorCols]  =lapply(student[factorCols], factor)  ## as.factor() could also be used</code></pre>
+<p>Also we will remove the <code>failures</code> predictor, since the amount of failures is already <em>poor performance</em> (which we want to predict):</p>
+<pre class="r"><code>student$failures = NULL</code></pre>
 </div>
 <div id="data-overview" class="section level2">
 <h2>Data overview</h2>
@@ -792,7 +774,7 @@ student_tst = student[-trn_idx, ]</code></pre>
 <h2>Diagnostics</h2>
 <p>And provide a set function for diagnostics of the model:</p>
 <pre class="r"><code>accuracy = function(model) {
-  mean(round(predict(model, newdata = student_tst)) != student_tst$G3)
+  mean(round(predict(model, newdata = student_tst)) == student_tst$G3)
 }
 
 loocv_rmse = function(model) {
@@ -803,86 +785,84 @@ influence = function(model, alpha = 0.01) {
   model_coef = summary(model)$coefficients
   model_coef[model_coef[,&quot;Pr(&gt;|t|)&quot;] &lt; alpha, &quot;Pr(&gt;|t|)&quot;]
 }</code></pre>
+<p>Let’s find the accuracy baseline, which we will try to beat:</p>
+<pre class="r"><code>baseline_mod = lm(G3 ~ 1, data = student_trn)
+coef(baseline_mod)[[1]]</code></pre>
+<pre><code>## [1] 11.81</code></pre>
+<p>Our baseline model would always predict <code>11.8131</code>.</p>
+<pre class="r"><code>accuracy(baseline_mod)</code></pre>
+<pre><code>## [1] 0.1385</code></pre>
+<p>It would get a pretty high accuracy score of <code>0.1385</code>, which we wil try to beat.</p>
 </div>
 <div id="initial-model-evaluation" class="section level2">
 <h2>Initial model evaluation</h2>
-<p>Now we’ll build full additive model using and compare P-values to <span class="math inline">\(\alpha=0.05\)</span>:</p>
+<p>Now we’ll build full additive model using and compare P-values to <span class="math inline">\(\alpha=0.01\)</span>:</p>
 <pre class="r"><code>full_add_mod = lm(G3 ~ ., data = student_trn)
 influence(full_add_mod)</code></pre>
 <pre><code>##        G1        G2 
 ## 5.395e-03 2.144e-80</code></pre>
 <p>We’re finding <code>G2</code> and <code>G1</code> as being very influential for the outcome of <code>G3</code>. This is expected, but we’d like to understand influence of other factors that the exams themselves, thus we’ll remove both and try another model:</p>
-<pre class="r"><code>add_mod2 = lm(G3 ~ . - G2 - G1, data = student_trn)
-influence(add_mod2)</code></pre>
+<pre class="r"><code>large_add_mod = lm(G3 ~ . - G2 - G1, data = student_trn)
+influence(large_add_mod)</code></pre>
 <pre><code>##  (Intercept)     schoolMS     failures schoolsupyes    higheryes       health 
 ##    3.303e-04    2.329e-06    2.307e-10    1.216e-03    2.968e-06    9.677e-03</code></pre>
-<p>We’re discovering <code>school</code>, <code>failures</code>, <code>higher</code>, <code>health</code> are being the most influential predictors, rejecting null hypothesis for any reasonable <span class="math inline">\(\alpha\)</span> level. Let’s build a model out of those predictors:</p>
-<pre class="r"><code>add_mod3 = lm(G3 ~ school + failures + higher + health, data = student_trn)</code></pre>
+<p>We’re discovering <code>school</code>, <code>sex</code>, <code>studytime</code>, <code>schoolsup</code> and <code>higher</code> are being the most influential predictors, rejecting null hypothesis for any reasonable <span class="math inline">\(\alpha\)</span> level. Let’s build a model out of those predictors:</p>
+<pre class="r"><code>small_add_mod = lm(G3 ~ school + sex + studytime + schoolsup + higher, data = student_trn)
+coef(small_add_mod)</code></pre>
+<pre><code>##  (Intercept)     schoolMS         sexM    studytime schoolsupyes    higheryes 
+##        9.121       -1.784       -0.676        0.505       -1.508        3.112</code></pre>
 <p>And compare it to the full additive model that has <code>G2</code> and <code>G1</code> removed:</p>
-<pre class="r"><code>anova(add_mod3, add_mod2)$`Pr(&gt;F)`[2]</code></pre>
-<pre><code>## [1] 0.0003887</code></pre>
-<p>We reject null hypothesis. There are other predictors that we should consider and we’ll use our third model to start searching for improvement.</p>
-<p>Now let’s see how our model does on the test set:</p>
-<pre class="r"><code>accuracy(add_mod3)</code></pre>
-<pre><code>## [1] 0.8154</code></pre>
-<pre class="r"><code>loocv_rmse(add_mod3)</code></pre>
-<pre><code>## [1] 2.832</code></pre>
-<p><span class="math inline">\(81\%\)</span> is a good start, now let’s start searching for a better model using <code>AIC</code>:</p>
-<pre class="r"><code>scope = formula(lm(G3 ~ (. - G2 - G1) ^ 2, data = student_trn))
-selected_frw = step(add_mod3, scope = scope, direction = &quot;forward&quot;, trace = 0)
-coef(selected_frw)</code></pre>
-<pre><code>##             (Intercept)                schoolMS                failures 
-##                 19.4254                 -0.2871                 -3.3361 
-##               higheryes                  health                    Dalc 
-##                  2.2241                 -0.2151                  0.5467 
-##            schoolsupyes               studytime                    Fedu 
-##                 -2.8042                 -4.0943                  0.7597 
-##          guardianmother           guardianother             romanticyes 
-##                 -0.2508                 -0.4741                 -0.4955 
-##                    sexM                     age               Dalc:Fedu 
-##                 -9.1398                 -0.5651                 -0.4033 
-##   failures:schoolsupyes       schoolMS:failures schoolMS:guardianmother 
-##                  2.6892                 -0.3765                 -1.4540 
-##  schoolMS:guardianother       Dalc:schoolsupyes         failures:health 
-##                  0.4905                  0.6377                  0.2958 
-## failures:guardianmother  failures:guardianother               Fedu:sexM 
-##                  1.5939                  2.2549                  0.4835 
-##                sexM:age           studytime:age      failures:studytime 
-##                  0.4515                  0.2766                 -0.5025</code></pre>
-<pre class="r"><code>accuracy(selected_frw)</code></pre>
-<pre><code>## [1] 0.8231</code></pre>
-<pre class="r"><code>loocv_rmse(selected_frw)</code></pre>
-<pre><code>## [1] 2.69</code></pre>
-<p>That’s minimal improvement and we’ve added a lot of interactions. Let’s look at VIFs bigger than 5:</p>
-<pre class="r"><code>car::vif(selected_frw) &gt; 5</code></pre>
-<pre><code>##                     GVIF    Df GVIF^(1/(2*Df))
-## school             FALSE FALSE           FALSE
-## failures            TRUE FALSE            TRUE
-## higher             FALSE FALSE           FALSE
-## health             FALSE FALSE           FALSE
-## Dalc                TRUE FALSE           FALSE
-## schoolsup          FALSE FALSE           FALSE
-## studytime           TRUE FALSE            TRUE
-## Fedu               FALSE FALSE           FALSE
-## guardian           FALSE FALSE           FALSE
-## romantic           FALSE FALSE           FALSE
-## sex                 TRUE FALSE            TRUE
-## age                 TRUE FALSE           FALSE
-## Dalc:Fedu           TRUE FALSE           FALSE
-## failures:schoolsup FALSE FALSE           FALSE
-## school:failures    FALSE FALSE           FALSE
-## school:guardian     TRUE FALSE           FALSE
-## Dalc:schoolsup     FALSE FALSE           FALSE
-## failures:health     TRUE FALSE           FALSE
-## failures:guardian   TRUE FALSE           FALSE
-## Fedu:sex            TRUE FALSE           FALSE
-## sex:age             TRUE FALSE            TRUE
-## studytime:age       TRUE FALSE            TRUE
-## failures:studytime  TRUE FALSE           FALSE</code></pre>
+<pre class="r"><code>anova(large_add_mod, small_add_mod)$`Pr(&gt;F)`[2]</code></pre>
+<pre><code>## [1] 1.415e-08</code></pre>
+<p>We reject null hypothesis at <span class="math inline">\(\alpha = 0.5\)</span>. The more complex model performs better. However, at <span class="math inline">\(\alpha = 0.1\)</span> we would fail to reject the null hypothesis and favor the smaller additive model. Because of this not too large difference, we need to take performance statistics (<span class="math inline">\(LOOCV\)</span> and <span class="math inline">\(accuracy\)</span>) into account for choosing our model.</p>
+<p>Let’s check how the models perform on unseen data:</p>
+<pre class="r"><code>perf = data.frame(c(accuracy(large_add_mod), accuracy(small_add_mod)),
+                  c(loocv_rmse(large_add_mod), loocv_rmse(small_add_mod)))
+colnames(perf) = c(&quot;Accuracy on test set&quot;, &quot;LOOCV RMSE&quot;)
+row.names(perf) = c(&quot;Large additive model&quot;, &quot;Small additive model&quot;)
+perf</code></pre>
+<pre><code>##                      Accuracy on test set LOOCV RMSE
+## Large additive model               0.1692      2.836
+## Small additive model               0.2000      2.926</code></pre>
+<p>The small additive model has better test accuarcy as well as <span class="math inline">\(LOOCV\)</span> RMSE. Both model are above the accuracy baseline of <code>0.1385</code>.</p>
+<p>So we will continue our search based on the small additive model</p>
+<p>Now let’s start searching for a better model using <code>AIC</code>:</p>
+<pre class="r"><code>scope = formula(lm(G3 ~ (school + sex + studytime + schoolsup + higher) ^ 3, data = student_trn))
+selected_frw_full = step(small_add_mod, scope = scope, direction = &quot;forward&quot;, trace = 0)</code></pre>
+<pre class="r"><code>accuracy(selected_frw_full)</code></pre>
+<pre><code>## [1] 0.2</code></pre>
+<pre class="r"><code>loocv_rmse(selected_frw_full)</code></pre>
+<pre><code>## [1] 2.923</code></pre>
+<p>It seems quite hopeless to find a good model using only selected variables. Let’s try putting G2,G1 and failures back in the model and do an analysis based on p-values. We’ve reached this interaction model:</p>
+<pre class="r"><code>data = student_trn
+data$outcome = as.factor(ifelse(data$G3 &gt; 10, 1, 0))
+
+int_mod = lm(G3 ~ (G2 + G1 + sex + age + absences + failures + famsize + paid + freetime + health) ^ 2 - 
+               G2:failures - paid - G2:absences - G1:age - failures:freetime - famsize:paid - age - absences:paid, 
+             data = student_trn)</code></pre>
+<p>I think our main difficulty is in the fact that the score is a number of 0..19 which is quite hard to pinpoint exactly having limited number of samples.</p>
+<p>We will redefine our problem in terms of logistic regression. Taking <code>10</code> as a <code>PASS</code> threshold and build a model for that:</p>
+<pre class="r"><code>student_trn$outcome = as.factor(ifelse(student_trn$G3 &gt; 10, 1, 0))
+student_tst$outcome = as.factor(ifelse(student_tst$G3 &gt; 10, 1, 0))
+
+bern_full = glm(outcome ~ . - G3, data = data, family = &quot;binomial&quot;)
+
+bern_accuracy = function(model) {
+  mean(ifelse(predict(model, student_tst) &gt; 0, 1, 0) == student_tst$outcome)
+}
+
+bern_accuracy(bern_full)</code></pre>
+<pre><code>## [1] 0.9077</code></pre>
+<pre class="r"><code>loocv_rmse(bern_full)</code></pre>
+<pre><code>## [1] 0.7851</code></pre>
+<p>90%</p>
+</div>
+</div>
+<div id="todo-better-model-is-far-too-big-i-think.-lets-further-explore-how-to-get-to-a-small-but-good-model." class="section level1">
+<h1>TODO: better model is far too big I think. Let’s further explore how to get to a small but good model.</h1>
 <p><em>The methods section should contain the bulk of your “work.” This section will contain the bulk of the R code that is used to generate the results. Your R code is not expected to be perfect idiomatic R, but it is expected to be understood by a reader without too much effort. Use RMarkdown and code comments to your advantage to explain your code if needed.</em></p>
 <p><em>This section should contain any information about data preparation that is performed to the original data before modelling. Then you will apply methods seen in class, which may include some of the following but are not limited to:</em></p>
 <p><em>Multiple linear regression</em> <em>Dummy variables</em> <em>Interaction</em> <em>Residual diagnostics</em> <em>Outlier diagnostics</em> <em>Transformations</em> <em>Polynomial regression</em> <em>Model selection</em> <em>Your task is not to use as many methods as possible. Your task is to use appropriate methods to find a good model that can correctly answer a question about the dataset, and then to communicate your result effectively.</em></p>
-</div>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
