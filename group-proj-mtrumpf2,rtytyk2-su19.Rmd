@@ -42,7 +42,7 @@ The original data provides two datasets covering two distinct subjects: Mathemat
 
 The main attributes to be used are the following:
 
-* Main response: **G3 - final grade**
+* Main response: **G1 - first period grade, G2 - second period grade, G3 - final grade** (We will explore which of these is to be used as main response. We also suspect a high multicollinearity, so we will only include one of these and exclude the others as predictors.)
 * Main predictors
     * **Sex** (categorial)
     * **Age** (numeric)
