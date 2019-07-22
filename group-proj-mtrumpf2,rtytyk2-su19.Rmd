@@ -102,7 +102,8 @@ The dataset was collected by Paulo Cortez, University of Minho, Guimarães, Port
 
 First we will load the data
 ```{r message=FALSE}
-student = read_delim("data/student-por.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+#student = read_delim("data/student-por.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+student = read.csv("data/student-por.csv", header = TRUE, sep = ";")
 head(student)
 ```
 
@@ -129,14 +130,14 @@ For now we will:
 * Keep the debateable numeric predictors (e.g., `traveltime (1, 2, 3, 4, 5)`) as numeric predictors. Generally this should be okay, since the numbers represent a clear order (they represent `very low` to `very high`). However, it needs to be considered when interpreting the results that the model using these numeric attributes will force the average change of the response between the different values to be the same (e.g., the average change of the response between a student with `traveltime = 1 (very low)` and another student with `traveltime = 2 (low)` will be the same as between a student with `traveltime = 4 (high)` and another student with `traveltime = 5 (very high)`.
 
 Perform the discussed factor conversion
-```{r}
+```{r, eval=FALSE}
 factorCols     = c("sex", "famsize", "Pstatus", "Mjob", "Fjob", "reason", "guardian", "schoolsup", "famsup", "paid", "activities", "nursery", "higher", "internet", "romantic")
 student[factorCols]  =lapply(student[factorCols], factor)  ## as.factor() could also be used
 ```
 
 Also we will remove the `failures` predictor, since the amount of failures is already *poor performance* (which we want to predict):
 
-```{r}
+```{r, eval=FALSE}
 student$failures = NULL
 ```
 
@@ -233,6 +234,7 @@ We're discovering `school`, `sex`, `studytime`, `schoolsup` and `higher` are bei
 
 ```{r}
 small_add_mod = lm(G3 ~ school + sex + studytime + schoolsup + higher, data = student_trn)
+coef(small_add_mod)
 ```
 
 And compare it to the full additive model that has `G2` and `G1` removed:
@@ -269,7 +271,38 @@ accuracy(selected_frw_full)
 loocv_rmse(selected_frw_full)
 ```
 
-We could not get any improvement with interactions.
+It seems quite hopeless to find a good model using only selected variables. Let's try putting G2,G1 and failures back in the model and do an analysis based on p-values. We've reached this interaction model:
+
+```{r}
+int_mod = lm(G3 ~ (G2 + G1 + sex + age + absences + failures + famsize + paid + freetime + health) ^ 2 - 
+               G2:failures - paid - G2:absences - G1:age - failures:freetime - famsize:paid - age - absences:paid, 
+             data = student_trn)
+
+accuracy(int_mod)
+loocv_rmse(int_mod)
+```
+
+I think our main difficulty is in the fact that the score is a number of 0..19 which is quite hard to pinpoint exactly having limited number of samples.
+
+We will redefine our problem in terms of logistic regression. Taking `10` as a `PASS` threshold and build a model for that:
+
+```{r} 
+student_trn$outcome = ifelse(student_trn$G3 > 10, 1, 0)
+student_tst$outcome = ifelse(student_tst$G3 > 10, 1, 0)
+```
+
+```{r}
+bern_full = glm(outcome ~ . - G3, data = student_trn, family = "binomial")
+
+bern_accuracy = function(model) {
+  mean(ifelse(predict(model, student_tst) > 0, 1, 0) == student_tst$outcome)
+}
+
+bern_accuracy(bern_full)
+loocv_rmse(bern_full)
+```
+
+90%
 
 # TODO: better model is far too big I think. Let's further explore how to get to a small but good model.
 
