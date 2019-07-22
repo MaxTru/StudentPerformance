@@ -185,7 +185,7 @@ And provide a set function for diagnostics of the model:
 
 ```{r}
 accuracy = function(model) {
-  mean(round(predict(model, newdata = student_tst)) != student_tst$G3)
+  mean(round(predict(model, newdata = student_tst)) == student_tst$G3)
 }
 
 loocv_rmse = function(model) {
@@ -197,6 +197,21 @@ influence = function(model, alpha = 0.01) {
   model_coef[model_coef[,"Pr(>|t|)"] < alpha, "Pr(>|t|)"]
 }
 ```
+
+Let's find the accuracy baseline, which we will try to beat:
+
+```{r}
+baseline_mod = lm(G3 ~ 1, data = student_trn)
+coef(baseline_mod)[[1]]
+```
+
+Our baseline model would always predict ``r coef(baseline_mod)[[1]]``. 
+
+```{r}
+accuracy(baseline_mod)
+```
+
+It would get a pretty high accuracy score of ``r accuracy(baseline_mod)``, which we wil try to beat.
 
 ## Initial model evaluation
 
@@ -238,12 +253,14 @@ row.names(perf) = c("Large additive model", "Small additive model")
 perf
 ```
 
-The large model has better test accuarcy, but the simpler model performs slightly better $LOOCV$. However, there is no big delta. So we will at first continue with our full model and later come back to the small model.
+The small additive model has better test accuarcy as well as $LOOCV$ RMSE. Both model are above the accuracy baseline of ``r accuracy(baseline_mod)``. 
 
-The full model does a good start with $81\%$ accuracy on train data, now let's start searching for a better model using `AIC`:
+So we will continue our search based on the small additive model
+
+Now let's start searching for a better model using `AIC`:
 
 ```{r}
-scope = formula(lm(G3 ~ (. - G2 - G1) ^ 2, data = student_trn))
+scope = formula(lm(G3 ~ (school + sex + studytime + schoolsup + higher) ^ 3, data = student_trn))
 selected_frw_full = step(small_add_mod, scope = scope, direction = "forward", trace = 0)
 ```
 
@@ -252,31 +269,7 @@ accuracy(selected_frw_full)
 loocv_rmse(selected_frw_full)
 ```
 
-That's minimal improvement and we've added a lot of interactions. Let's look at VIFs bigger than 5:
-
-```{r}
-car::vif(selected_frw_full) > 5
-```
-
-The large majority of predictors has a suspicious high VIF. 
-
-Let's try to use `BIC` for model selection to improve this.
-
-```{r}
-n = nrow(student_trn)
-scope = formula(lm(G3 ~ (. - G2 - G1) ^ 2, data = student_trn))
-selected_frw_full_bic = step(small_add_mod, scope = scope, direction = "forward", trace = 0, k = log(n))
-coef(selected_frw_full_bic)
-```
-
-```{r}
-accuracy(selected_frw_full_bic)
-loocv_rmse(selected_frw_full_bic)
-```
-
-By using `BIC` for model selection, we improved our model in test accuracy as well as in $LOOCV$ while maintaining a quite low $p$ of ``r length(coef(selected_frw_full_bic))`` (as compared to ``r length(coef(selected_frw_full))`` for the full model when using `AIC`).
-
-However, we can still not beat the full model, but we get closer.
+We could not get any improvement with interactions.
 
 # TODO: better model is far too big I think. Let's further explore how to get to a small but good model.
 
