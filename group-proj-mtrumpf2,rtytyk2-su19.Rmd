@@ -361,7 +361,7 @@ influential_obs_idx = cooks.distance(int_mod_large_BIC) > 4 / length(cooks.dista
 sum(influential_obs_idx)
 ```
 
-We will remove these ``r sum(int_mod_large_BIC)`` observations.
+We will remove these ``r sum(influential_obs_idx)`` observations.
 
 ```{r}
 student_trn_cleaned = student_trn[!influential_obs_idx, ]
@@ -377,7 +377,7 @@ accuracy(int_mod_large_BIC_cleaned)
 loocv_rmse(int_mod_large_BIC_cleaned)
 ```
 
-For this model, the removal of unusual observations led to a performance increase.
+For this model, the removal of unusual observations did also not lead to a performance increase.
 
 Let's also take a look at fitted-vs-residuals and QQ-plot. At first we will define a `diagnostics` function, which will (1) plot fitted-vs-residuals plot, (2) plot qq-plot, (3) calculate sw-test, (4) calcualted bp-test. (function will not be knitted to html)
 
@@ -486,7 +486,6 @@ The following table shows the $LOOCV-RMSE$ and **accuracy** on test data of the 
 ```{r, echo = FALSE}
 results_df = rbind(
   "Full (incl. G1 and G2) polynomial, interaction model" = c(accuracy(int_pol_mod_full), loocv_rmse(int_pol_mod_full)),
-  "Large (excl. G1 and G2) additive model without unusual observations" = c(accuracy(int_mod_large_BIC_cleaned), loocv_rmse(int_mod_large_BIC_cleaned)),
   "Large (excl. G1 and G2) additive model" = c(accuracy(int_mod_large_BIC), loocv_rmse(int_mod_large_BIC)),
   "Small additive model" = c(accuracy(small_add_mod), loocv_rmse(small_add_mod)),
   "Baseline model" = c(accuracy(baseline_mod), loocv_rmse(baseline_mod))
@@ -500,12 +499,65 @@ kable(results_df,
       )
 ```
 
+We will continue with the two best performing models from our two perspectives `Full (incl. G1 and G2)` and `Large (excl. G1 and G2)` (see [discussion chapter](#discussion_chapter) for explanation of this distinction).
+
+Let's plot the actual vs. predicted G3 performance for our two best models. 
+
+```{r echo = FALSE}
+plot(x = round(predict(int_pol_mod_full, newdata = student_tst)), y = student_tst$G3,
+     pch  = 20,
+     cex  = 2,
+     col  = "darkblue",
+     xlim = c(0, 20),
+     ylim = c(0, 20),
+     main = "Full interaction, polynomial model: predicted G3 vs. actual G3",
+     xlab = "Rounded predicted G3 performance",
+     ylab = "Actual G3 performance")
+lines(x = c(0, 20), y = c(0, 20),
+      lwd = 2,
+      col = "orange")
+```
+
+```{r echo = FALSE}
+plot(x = round(predict(int_mod_large_BIC, newdata = student_tst)), y = student_tst$G3,
+     pch  = 20,
+     cex  = 2,
+     col  = "darkblue",
+     xlim = c(0, 20),
+     ylim = c(0, 20),
+     main = "Large additive modell: predicted G3 vs. actual G3",
+     xlab = "Rounded predicted G3 performance",
+     ylab = "Actual G3 performance")
+lines(x = c(0, 20), y = c(0, 20),
+      lwd = 2,
+      col = "orange")
+```
+
+The plots show us:
+
+1. For students with a performance of `0` in `G3`, both models perform the worst (although the full model is a bit better). So if a students completly fails `G3`, this is probably due to special circumstances. 
+2. The trend predicted by both models is correct. The large model not taking `G1` and `G2` into account, is not as precise as the full model but does still cover the trend correctly.
+
+This means: 
+
+* Both models can be used to explain how social and demographic features could impact the trend of the students performance. 
+* Special circumstances leading to `0` points can not be explained by the data. 
+* `G1` and `G2` are needed to more or lesss precisely estimate the grade (+/- ~3 points). Without them, the trend is still present, but the precision goes down (+/- ~6).
+
 
 ## Logistic regression
 
 *The results section should contain numerical or graphical summaries of your results. You should report a final model you have chosen. There is not necessarily one, singular correct model, but certainly some methods and models are better than others in certain situations. You may use any methods we studied this semester to complete this task, and provide evidence that your final choice of model is a good one.*
 
-# Discussion
+# Discussion {#discussion_chapter}
+
+We are differentiating between `Full (incl. G1 and G2)` and `Large (excl. G1 and G2)` in the results. The reason for that is, that `G1` and `G2` have a high multicollinearity with the response `G3`. Also intuitively it makes sense that the past performance of a student is highly correlated with his/her future performance. Since our goal is to explain what social and demographic features impact future performance, we want to consider a model which therefore excludes `G1` and `G2` so that the other predictors can easier be used for interpretation.
+
+The predicted vs. actual plots show us that:
+
+* Both models can be used to explain how social and demographic features could impact the trend of the students performance. 
+* Special circumstances leading to `0` points can not be explained by the data. 
+* `G1` and `G2` are needed to more or lesss precisely estimate the grade (+/- ~3 points). Without them, the trend is still present, but the precision goes down (+/- ~6).
 
 *The discussion section should contain discussion of your results and should frame your results in the context of the data. How is your final model useful?*
 
