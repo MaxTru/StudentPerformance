@@ -6,19 +6,20 @@ output:
   html_document:
     theme: flatly
     toc: yes
-    fig_width: 10
+    fig_width: 8
     fig_height: 5
   pdf_document: default
 urlcolor: cyan
 ---
 
-```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
-options(scipen = 1, digits = 4, width = 80, fig.align = "center")
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE, cache=TRUE}
+options(scipen = 1, digits = 2, width = 80, fig.align = "center")
 library(readr)
 library(boot)
 library(ggplot2)
 library(car)
 library(knitr)
+library(ggpubr)
 ```
 
 # Introduction
@@ -131,6 +132,82 @@ For now we will:
 
 ## Data overview
 
+### Data exploration
+
+```{r}
+summary(student)
+```
+
+There *383 females* and *266 males* in the dataset. A strong majority of 457 has more than 2 siblings. Most of the student aren't in romantic relationship and *strong majority of 580 want higher education*. On average our students report *good health* and *good relation* with their families. Strong majority of 455 have *mother* as their guardian. They go out on average 3 days a week, which is as much as they have free time. They are absent 3.66 days on average with one person being absent 32 days.
+
+```{r}
+student[student$absences > 20, c("G3", "absences", "sex", "age")]
+```
+
+
+#### Health
+
+Let's first visualize how healthy are our students:
+
+```{r, echo=FALSE}
+hist(student$health, col = "dodgerblue", breaks=5, main = "Histogram of health", xlab = "health")
+```
+
+There are `r mean(student$health > 2)*100.0`% students that report health +3 and `r mean(student$health < 3)*100.0`% which are below 3.
+Let's visualize if health influences `G3` in significant way:
+
+```{r, echo=FALSE}
+ggplot(data = student, aes(x=health, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE)
+```
+
+Strangely, we're observing inverse relationship between `health` and `G3`. Seems like feeling good takes students off their studying.
+
+#### Age
+
+Let's visualize relationship between `age`, `sex` and `G3`:
+
+```{r, echo=FALSE}
+ggplot(data = student, aes(x=age, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE)
+```
+
+We notice inverse relationship between `age` and `G3` performance for both sexes. Females are doing on average better than males by $`r mean(student[student$sex == 'F', 'G3']) - mean(student[student$sex == 'M', 'G3'])`$ points on `G3` and while no females over 21 are present in the dataset, there is 1 male student aged 22, doing the worst - a potential outlier:
+
+```{r}
+student[student$age == 22, c("sex", "age", "G1", "G2", "G3", 
+                             "higher", "failures", "studytime", "famsize")]
+```
+
+
+#### Studytime and Absences
+
+Now let's observe how `studytime` and `absences` affect `G3`. We'll divide results by `sex`:
+
+```{r, echo=FALSE}
+ggarrange(
+  ggplot(student, aes(x=studytime, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE),
+  ggplot(student, aes(x=absences, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE)
+)
+```
+
+Again, the females are doing better on average than males. As expected, we're seeing positive relationship between `studytime` and `G3` result, and inverse relationship between `absences` and `G3`.
+
+#### Alkohol consumption and Activities
+
+Now we'll look how alkohol consumption affect `G3` performance. We'll divide the plots into people who take off school `acivities` and those who do not.
+
+```{r, echo=FALSE}
+ggarrange(
+  ggplot(data = student, aes(x=Walc, y=G3, color=activities))
+    + geom_smooth(aes(group=activities), method="lm", se=FALSE) + xlab("Weekend Alkohol Consumption"),
+  ggplot(data = student, aes(x=Dalc, y=G3, color=activities))
+    + geom_smooth(aes(group=activities), method="lm", se=FALSE) + xlab("Daily Alkohol Consumption")
+)
+```
+
+We can clearly observe that daily consumption of alkohol resolves in much worse performance than weekend consumption. The effect is made even larger by lack of `activities`, especially for people consuming alkohol daily.
+
+### Data correlation
+
 Evaluate correlation
 ```{r}
 # Evaluate correlation
@@ -156,7 +233,11 @@ points(dpois(x = 0:20, lambda = 10), col = "orange", pch = 20, cex = 2)
 
 From a visual inspection, the response could either follow a normal (green curve) or a Poisson distribution (orange points). Since there is not a large delta of the "fit", we will continue with using **Linear Regression Models** over **Generalized Linear Models with link function for Poisson distribution**.
 
-## Data Split
+## Linear and Logistic Regression
+
+We will explore formulating the problem as linear (predict the grade) as well as logistic (predict `pass/fail`) problem.
+
+### Data Split
 
 We'll split our dataset into train/test sets:
 
@@ -168,10 +249,6 @@ trn_idx = c(594, 608, 186, 537, 414, 335, 474, 87, 422, 452, 293, 459, 596, 163,
 student_trn = student[trn_idx, ]
 student_tst = student[-trn_idx, ]
 ```
-
-## Linear and Logistic Regression
-
-We will explore formulating the problem as linear (predict the grade) as well as logistic (predict `pass/fail`) problem.
 
 ### Linear regression
 
@@ -213,21 +290,21 @@ It would get an accuracy score of ``r accuracy(baseline_mod)``, which we wil try
 
 Now we'll build full additive model using and compare P-values to $\alpha=0.01$:
 
-```{r}
+```{r, cache=TRUE}
 full_add_mod = lm(G3 ~ ., data = student_trn)
 influence(full_add_mod)
 ```
 
 We're finding `G2` and `G1` as being very influential for the outcome of `G3`. This is expected, but we'd like to understand influence of other factors that the exams themselves, thus we'll remove both and try another model:
 
-```{r}
+```{r, cache=TRUE}
 large_add_mod = lm(G3 ~ . - G2 - G1, data = student_trn)
 influence(large_add_mod)
 ```
 
 We're discovering `school`, `studytime`, `failures`, `higher` and `romantic` are being the most influential predictors, rejecting null hypothesis for any reasonable $\alpha$ level. Let's build a model out of those predictors:
 
-```{r}
+```{r, cache=TRUE}
 small_add_mod = lm(G3 ~ school + studytime + failures + higher + romantic, data = student_trn)
 coef(small_add_mod)
 ```
@@ -258,7 +335,7 @@ We will continue our search based on the large additive model and based on the f
 
 Let's start searching for a better model using `AIC` based on the large additive model:
 
-```{r}
+```{r, cache=TRUE}
 scope = formula(lm(G3 ~ (. - G1 - G2) ^ 3, data = student_trn))
 int_mod_large_AIC = step(small_add_mod, scope = scope, direction = "forward", trace = 0)
 ```
@@ -270,7 +347,7 @@ loocv_rmse(int_mod_large_AIC)
 
 Using `AIC` we get a model which does not well perform on unseen data (ie overfitting), we will therefore switch to `BIC`.
 
-```{r}
+```{r, cache=TRUE}
 n = nrow(student_trn)
 scope = formula(lm(G3 ~ (. - G1 - G2) ^ 3, data = student_trn))
 int_mod_large_BIC = step(small_add_mod, scope = scope, direction = "forward", trace = 0, k = log(n))
@@ -285,7 +362,7 @@ We were able to improve our accuracy from ``r accuracy(large_add_mod)`` to ``r a
 
 Based on the improved model, we will also try to do a polynomial transformation:
 
-```{r}
+```{r, cache=TRUE}
 int_pol_mod_large = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + higher + romantic + I(Medu ^ 2) + sex + schoolsup, data = student_trn)
 ```
 
@@ -298,7 +375,7 @@ The polynomial transformation did not deliver an improvement on unseen data for 
 
 Now let's do the same thing with the full model (including `G1` and `G2`). We will right aways start with `BIC` so to avoid overfitting (which we have seen before when using `AIC`):
 
-```{r}
+```{r, cache=TRUE}
 n = nrow(student_trn)
 scope = formula(lm(G3 ~ (.) ^ 3, data = student_trn))
 int_mod_full_BIC = step(small_add_mod, scope = scope, direction = "forward", trace = 0, k = log(n))
@@ -313,7 +390,7 @@ We were able to improve our accuracy from ``r accuracy(full_add_mod)`` to ``r ac
 
 Based on the improved model, we will also try to do a polynomial transformation:
 
-```{r}
+```{r, cache=TRUE}
 int_pol_mod_full = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + I(G2 ^ 2) + I(G1 ^ 2) + higher + romantic + higher:romantic + G2:G1, data = student_trn)
 ```
 
@@ -343,7 +420,7 @@ We will remove these ``r sum(influential_obs_idx)`` observations.
 student_trn_cleaned = student_trn[!influential_obs_idx, ]
 ```
 
-```{r}
+```{r, cache=TRUE}
 int_pol_mod_full_cleaned = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + I(G2 ^ 2) + I(G1 ^ 2) + higher + romantic + higher:romantic + G2:G1, data = student_trn_cleaned)
 ```
 
