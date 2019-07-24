@@ -157,23 +157,24 @@ worst_students = student[student$G3 < 6, ]
 ```
 
 ```{r, echo=FALSE}
+roundmean = function(x) round(mean(x), 2)
 knitr::kable(
   x = do.call(rbind, list(
-    c("Average age", mean(best_students$age), mean(worst_students$age)),
-    c("Average study time", mean(best_students$studytime), mean(worst_students$studytime)),
+    c("Average age", roundmean(best_students$age), roundmean(worst_students$age)),
+    c("Average study time", roundmean(best_students$studytime), roundmean(worst_students$studytime)),
     c("How many had a paid tuition", sum(best_students$paid == "yes"), sum(worst_students$paid == "yes")),
-    c("Average health", mean(best_students$health), mean(worst_students$health)),
-    c("Average drinking during the week", mean(best_students$Dalc), mean(worst_students$Dalc)),
-    c("Average drinking during the weeekend", mean(best_students$Walc), mean(worst_students$Walc)),
-    c("Average family relationship", mean(best_students$famrel), mean(worst_students$famrel)),
-    c("Average free time", mean(best_students$freetime), mean(worst_students$freetime))
+    c("Average health", roundmean(best_students$health), roundmean(worst_students$health)),
+    c("Average drinking during the week", roundmean(best_students$Dalc), roundmean(worst_students$Dalc)),
+    c("Average drinking during the weeekend", roundmean(best_students$Walc), roundmean(worst_students$Walc)),
+    c("Average family relationship", roundmean(best_students$famrel), roundmean(worst_students$famrel)),
+    c("Average free time", roundmean(best_students$freetime), roundmean(worst_students$freetime))
   )),
   col.names = c("Query", "Best students", "Worst students"),
   digits = c(0, 2, 2),
   format = "markdown")
 ```
 
-We observe that best students are on average younger, study more and drink less, they also tend to have less free time and report worse health. 
+We observe that best students are on average younger, study more and drink less than their worst counterparts, they also tend to have less free time and report worse health. They also didn't do any paid tuition.
 
 #### Guardian
 
