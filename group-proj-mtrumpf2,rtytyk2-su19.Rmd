@@ -167,7 +167,9 @@ knitr::kable(
     c("Average drinking during the week", roundmean(best_students$Dalc), roundmean(worst_students$Dalc)),
     c("Average drinking during the weeekend", roundmean(best_students$Walc), roundmean(worst_students$Walc)),
     c("Average family relationship", roundmean(best_students$famrel), roundmean(worst_students$famrel)),
-    c("Average free time", roundmean(best_students$freetime), roundmean(worst_students$freetime))
+    c("Average free time", roundmean(best_students$freetime), roundmean(worst_students$freetime)),
+    c("Average father's education", roundmean(best_students$Fedu), roundmean(worst_students$Fedu)),
+    c("Average mother's education", roundmean(best_students$Medu), roundmean(worst_students$Medu))
   )),
   col.names = c("Query", "Best students", "Worst students"),
   digits = c(0, 2, 2),
