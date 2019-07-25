@@ -657,16 +657,18 @@ loocv_rmse(bern_full)
 
 ## Linear regression
 
-The following table shows the $LOOCV-RMSE$ and **accuracy** on test data of the best initial models we built (see [Initial Model Evaluation](#initialModelEvalLinear)) using linear regression:
+### Prediction results
+
+The following table shows the **accuracy** on test data, $LOOCV-RMSE$ and $R^2$ of the best models we built and the baseline model (see [Initial Model Evaluation](#initialModelEvalLinear)) using linear regression:
 
 ```{r, echo = FALSE}
 results_df = rbind(
-  "Full (incl. G1 and G2) polynomial, interaction model" = c(accuracy(int_pol_mod_full), loocv_rmse(int_pol_mod_full)),
-  "Large (excl. G1 and G2) additive model" = c(accuracy(int_mod_large_BIC), loocv_rmse(int_mod_large_BIC)),
-  "Small additive model" = c(accuracy(small_add_mod), loocv_rmse(small_add_mod)),
-  "Baseline model" = c(accuracy(baseline_mod), loocv_rmse(baseline_mod))
+  "Full (incl. G1 and G2) polynomial, interaction model" = c(accuracy(int_pol_mod_full), loocv_rmse(int_pol_mod_full), summary(int_pol_mod_full)$r.squared),
+  "Large (excl. G1 and G2) additive model" = c(accuracy(int_mod_large_BIC), loocv_rmse(int_mod_large_BIC), summary(int_mod_large_BIC)$r.squared),
+  "Small additive model" = c(accuracy(small_add_mod), loocv_rmse(small_add_mod), summary(small_add_mod)$r.squared),
+  "Baseline model" = c(accuracy(baseline_mod), loocv_rmse(baseline_mod), summary(baseline_mod)$r.squared)
 )
-colnames(results_df) = c("Accuracy on test data", "LOOCV-RMSE")
+colnames(results_df) = c("Accuracy on test data", "LOOCV-RMSE", "R-squared")
 
 
 kable(results_df,
@@ -714,18 +716,29 @@ The plots show us:
 1. For students with a performance of `0` in `G3`, both models perform the worst (although the full model is a bit better). So if a students completly fails `G3`, this is probably due to special circumstances. 
 2. The trend predicted by both models is correct. The large model not taking `G1` and `G2` into account, is not as precise as the full model but does still cover the trend correctly.
 
-This means: 
+### Explaining the impact of social and demographic features on performance (`G3`) using the models
 
-* Both models can be used to explain how social and demographic features could impact the trend of the students performance. 
-* Special circumstances leading to `0` points can not be explained by the data. 
-* `G1` and `G2` are needed to more or lesss precisely estimate the grade (+/- ~3 points). Without them, the trend is still present, but the precision goes down (+/- ~6).
+We will need the `estimate` as well as the `p-value` for explaining the impact of social and demographic features on performance. The [discussions chapter](#discussionsChap) will be used for the explanation.
 
+```{r, echo = FALSE}
+kable(summary(int_pol_mod_full)$coef,
+      format = 'markdown',
+      digits = 2)
+```
+
+```{r}
+kable(summary(int_mod_large_BIC)$coef,
+      format = 'markdown',
+      digits = 2)
+```
 
 ## Logistic regression
 
 *The results section should contain numerical or graphical summaries of your results. You should report a final model you have chosen. There is not necessarily one, singular correct model, but certainly some methods and models are better than others in certain situations. You may use any methods we studied this semester to complete this task, and provide evidence that your final choice of model is a good one.*
 
 # Discussion {#discussion_chapter}
+
+## Model selection
 
 We are differentiating between `Full (incl. G1 and G2)` and `Large (excl. G1 and G2)` in the results. The reason for that is, that `G1` and `G2` have a high multicollinearity with the response `G3`. Also intuitively it makes sense that the past performance of a student is highly correlated with his/her future performance. Since our goal is to explain what social and demographic features impact future performance, we want to consider a model which therefore excludes `G1` and `G2` so that the other predictors can easier be used for interpretation.
 
@@ -734,6 +747,45 @@ The predicted vs. actual plots show us that:
 * Both models can be used to explain how social and demographic features could impact the trend of the students performance. 
 * Special circumstances leading to `0` points can not be explained by the data. 
 * `G1` and `G2` are needed to more or lesss precisely estimate the grade (+/- ~3 points). Without them, the trend is still present, but the precision goes down (+/- ~6).
+
+## Model interpretation {#discussionsChap}
+
+While the full model `Full (incl. G1 and G2)` achieves an $R^2$ of ``r summary(int_pol_mod_full)$r.squared``, the larger model `Large (excl. G1 and G2)` does only achieve an $R^2$ of ``r summary(int_mod_large_BIC)$r.squared``. So the model without `G1` and `G2` explains ``r summary(int_mod_large_BIC)$r.squared`` of the variability in the data (which is ``r summary(int_pol_mod_full)$r.squared - summary(int_mod_large_BIC)$r.squared`` less than the model including `G1` and `G2`). This is what we intuitively would expect: **the most significant predictor for a student`s performance, is his or her past performance.**
+
+However, still there are important social and demopgraphic features affecting the performance. In order to **perform this explanation, we will choose the coefficients from the simpler model (`Large (excl. G1 and G2)`)**, since the smaller model will allow for an easier interpration of the results.
+
+There are 5 categorial and 3 numerical predictor attributes impacting the response variable performance `G3`. 
+
+* Categorial predictors
+    * `school`: the `G3` performance will differ on average by ``r summary(int_mod_large_BIC)$coef[2,1]`` if a student visits the `Mousinho da Silveira` school as compared to the `Gabriel Pereira` school.
+    * `higher`: the `G3` performance will differ on average by ``r summary(int_mod_large_BIC)$coef[5,1]`` if a student aims for higher education as compared to if she/he doesn't aim for higher education. 
+    * `romantic`: the `G3` performance will differ on average by ``r summary(int_mod_large_BIC)$coef[6,1]`` if a student considers himself or herself as romantic (as compared to a non-romantic student). 
+    * `sex`: the `G3` performance will differ on average by ``r summary(int_mod_large_BIC)$coef[8,1]`` if a student is male.
+    * `schoolsup`: the `G3` performance will differ on average by ``r summary(int_mod_large_BIC)$coef[9,1]`` if a student receives extra educational support.
+* Numerical predictors
+    * `studytime`: the `G3` performance will increase on average by ``r summary(int_mod_large_BIC)$coef[3,1]`` for increasing the study time by one hour per week for a student with a certain set of attributes (see other predictors of this model). 
+    * `failures`: the `G3` performance will decrease on average by ``r abs(summary(int_mod_large_BIC)$coef[4,1])`` if a student with a certain set of attributes (see other predictors of this model) had 1 more past class failures. 
+    * `medu`: the `G3` performance will increase on average by ``r abs(summary(int_mod_large_BIC)$coef[7,1])`` if the mother of a student with a certain set of attributes (see other predictors of this model) has 1 "level" (very low, low, ...) more education. 
+    
+**Interpretation of the results**
+
+We can distinguish 3 different areas impacting the performance:
+    
+**Past performances**
+
+intuitively, the results make sense: if a student has had general difficulties in the past (indicated by `failures` and `schoolsup`), unfortunetly also his/her future performances will according to the model be lower as compared to a student who didn't have such difficulties. 
+
+**Student motivation**
+
+However, besides the past performance, one can positively influence the futuer performance: choose a school of high quality or which is simply giving better grades (differenciating this would need a separate analysis) (indicated by `school`), motivate the student to have a goal, which he/she would like to achieve with education (indicated by `higher`) and to spend much time studying (indicated by `studytime`).
+
+**Social factors**
+
+Still there are also factors, which can hardly be influenced and yet impact the performance. These include `romantic` and `sex`, two factors which cannot be influenced.
+
+**Irrelevant factors**
+
+Having data about the previously mentioned attriutes, makes the remaining predictors not significant for the prediction of student performance (`G3`). It should be highlighted, that factors which are often stated as being significant in the publich opinion, such as neighborhood (`address`) and family size (`famsize`).
 
 *The discussion section should contain discussion of your results and should frame your results in the context of the data. How is your final model useful?*
 
