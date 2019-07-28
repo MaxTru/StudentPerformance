@@ -714,13 +714,17 @@ The plots show us:
 
 We will need the `estimate` as well as the `p-value` for explaining the impact of social and demographic features on performance. The [discussions chapter](#discussionsChap) will be used for the explanation.
 
-```{r, echo = FALSE}
+For the full model:
+
+```{r echo = FALSE}
 kable(summary(int_pol_mod_full)$coef,
       format = 'markdown',
       digits = 2)
 ```
 
-```{r}
+And for the large model:
+
+```{r echo = FALSE}
 kable(summary(int_mod_large_BIC)$coef,
       format = 'markdown',
       digits = 2)
