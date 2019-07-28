@@ -645,13 +645,13 @@ Good to know that vast majority of students drink very little or not at all, and
 
 + No. of drinkers:
   + Light weekend drinkers: `r sum(student$Walc < 3)`,
-  + heavy weekend drinkers: `r sum(student$Walc >= 3)`,
-  + light daily drinkers: `r sum(student$Dalc < 3)`,
-  + heavy daily drinkers: `r sum(student$Dalc >= 3)`.
+  + Heavy weekend drinkers: `r sum(student$Walc >= 3)`,
+  + Light daily drinkers: `r sum(student$Dalc < 3)`,
+  + Heavy daily drinkers: `r sum(student$Dalc >= 3)`.
 
 ## Linear regression
 
-### Prediction results
+### Prediction performance
 
 The following table shows the **accuracy** on test data, $LOOCV-RMSE$ and $R^2$ of the best models we built and the baseline model (see [Initial Model Evaluation](#initialModelEvalLinear)) using linear regression:
 
