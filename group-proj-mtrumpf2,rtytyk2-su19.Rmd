@@ -290,15 +290,22 @@ We were able to improve our accuracy from ``r accuracy(large_add_mod)`` to ``r a
 Based on the improved model, we will also try to do a polynomial transformation:
 
 ```{r, cache=TRUE}
-int_pol_mod_large = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + higher + romantic + I(Medu ^ 2) + sex + schoolsup, data = student_trn)
+int_pol_mod_large = lm(G3 ~ school + studytime + I(studytime ^ 2) + failures + I(failures ^ 2) + higher + romantic + Medu + I(Medu ^ 2) + sex + schoolsup, data = student_trn)
 ```
+
+Let's only keep terms with a reasonable low p-value first:
+
+```{r}
+int_pol_mod_large = lm (G3 ~ school + studytime + failures + I(failures ^ 2) + higher + I(Medu ^ 2) + sex + schoolsup, data = student_trn)
+```
+
 
 ```{r}
 accuracy(int_pol_mod_large)
 loocv_rmse(int_pol_mod_large)
 ```
 
-The polynomial transformation did not deliver an improvement on unseen data for the large model (excl. `G1` and `G2`).
+The polynomial transformation did not deliver an improvement on unseen data for the large model (excl. `G1` and `G2`). So we will keep the additive model selected using $BIC$ as our *best* model (`int_mod_large_BIC`).
 
 Now let's do the same thing with the full model (including `G1` and `G2`). We will right aways start with `BIC` so to avoid overfitting (which we have seen before when using `AIC`):
 
@@ -746,7 +753,7 @@ The predicted vs. actual plots show us that:
 * Special circumstances leading to `0` points can not be explained by the data. 
 * `G1` and `G2` are needed to more or lesss precisely estimate the grade (+/- ~3 points). Without them, the trend is still present, but the precision goes down (+/- ~6).
 
-## Model interpretation {#discussionsChap}
+## Regression Model interpretation {#discussionsChap}
 
 While the full model `Full (incl. G1 and G2)` achieves an $R^2$ of ``r summary(int_pol_mod_full)$r.squared``, the larger model `Large (excl. G1 and G2)` does only achieve an $R^2$ of ``r summary(int_mod_large_BIC)$r.squared``. So the model without `G1` and `G2` explains ``r summary(int_mod_large_BIC)$r.squared`` of the variability in the data (which is ``r summary(int_pol_mod_full)$r.squared - summary(int_mod_large_BIC)$r.squared`` less than the model including `G1` and `G2`). This is what we intuitively would expect: **the most significant predictor for a student`s performance, is his or her past performance.**
 
@@ -771,7 +778,7 @@ We can distinguish 3 different areas impacting the performance:
     
 **Past performances**
 
-intuitively, the results make sense: if a student has had general difficulties in the past (indicated by `failures` and `schoolsup`), unfortunetly also his/her future performances will according to the model be lower as compared to a student who didn't have such difficulties. 
+Intuitively, the results make sense: if a student has had general difficulties in the past (indicated by `failures` and `schoolsup`), unfortunetly also his/her future performances will according to the model be lower as compared to a student who didn't have such difficulties. 
 
 **Student motivation**
 
