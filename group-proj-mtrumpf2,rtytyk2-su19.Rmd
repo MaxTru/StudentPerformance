@@ -132,176 +132,21 @@ For now we will:
 
 * Keep the debateable numeric predictors (e.g., `traveltime (1, 2, 3, 4, 5)`) as numeric predictors. Generally this should be okay, since the numbers represent a clear order (they represent `very low` to `very high`). However, it needs to be considered when interpreting the results that the model using these numeric attributes will force the average change of the response between the different values to be the same (e.g., the average change of the response between a student with `traveltime = 1 (very low)` and another student with `traveltime = 2 (low)` will be the same as between a student with `traveltime = 4 (high)` and another student with `traveltime = 5 (very high)`.
 
+## Data correlation
 
-## Data overview
-
-### Data exploration
-
+Evaluate correlation
 ```{r}
-summary(student)
+# Evaluate correlation
+cor_matrix = cor(student[, sapply(student, is.numeric)])
+which( cor_matrix > 0.7 & cor_matrix < 1.0, arr.ind = T)
 ```
 
-There are *383 females* and *266 males* in the dataset. A strong majority of *457 to 192 have more than 2 siblings*. Majority of *410 to 239 aren't in romantic relationships* and strong majority of *580 to 69 want higher education*. On average our students report *good health* and *good relationship* with their families. Strong majority of *455 to 194 have mother* as their guardian. Students go out 3 days a week on average, which is as much as they have free time. On average, they are absent from class 3.66 days, with one person being absent 32 days.
-
-```{r}
-student[student$absences > 20, c("G1", "G2", "G3", "absences", "sex", "age")]
-```
-
-#### Best and worse students
-
-Let's start off by looking at best students, understood as those that scored higher than 17 on `G3`:
-
-```{r}
-best_students = student[student$G3 > 17, ]
-worst_students = student[student$G3 < 6, ]
-```
-
-```{r, echo=FALSE}
-roundmean = function(x) round(mean(x), 2)
-knitr::kable(
-  x = do.call(rbind, list(
-    c("Average age", roundmean(best_students$age), roundmean(worst_students$age)),
-    c("Average study time", roundmean(best_students$studytime), roundmean(worst_students$studytime)),
-    c("How many had a paid tuition", sum(best_students$paid == "yes"), sum(worst_students$paid == "yes")),
-    c("Average health", roundmean(best_students$health), roundmean(worst_students$health)),
-    c("Average drinking during the week", roundmean(best_students$Dalc), roundmean(worst_students$Dalc)),
-    c("Average drinking during the weeekend", roundmean(best_students$Walc), roundmean(worst_students$Walc)),
-    c("Average family relationship", roundmean(best_students$famrel), roundmean(worst_students$famrel)),
-    c("Average free time", roundmean(best_students$freetime), roundmean(worst_students$freetime)),
-    c("Average father's education", roundmean(best_students$Fedu), roundmean(worst_students$Fedu)),
-    c("Average mother's education", roundmean(best_students$Medu), roundmean(worst_students$Medu))
-  )),
-  col.names = c("Query", "Best students", "Worst students"),
-  digits = c(0, 2, 2),
-  format = "markdown")
-```
-
-We observe that best students are on average younger, study more and drink less than their worst counterparts, they also tend to have less free time and report worse health. They also didn't do any paid tuition.
-
-#### Guardian
-
-Now we'll look at `G3` performance based on student's primary guardian:
-
-```{r}
-boxplot(student$G3 ~ student$guardian, xlab = "guardian", ylab = "G3",
-        col = "dodgerblue", main = "Variance of G3 by guardian")
-```
-
-We observe that students who's primary guardian is mother have broadest variance on both ends. Fathers tend to limit lower end at the cost of some higher end. Other types of guardians seem to do worse on average, having much smaller variance on both ends.
-
-#### Parents education
-
-Now let's see how parents's education influences their children:
-
-```{r, echo=FALSE}
-boxplot(student$G3 ~ student$Medu, xlab = "Mother's education level", ylab = "G3",
-        col = "dodgerblue", main = "Variance of G3 by Mother's education level")
-```
-
-```{r, echo=FALSE}
-boxplot(student$G3 ~ student$Fedu, xlab = "Father's education level", ylab = "G3",
-        col = "dodgerblue", main = "Variance of G3 by Father's education level")
-```
-
-It can be observed that students who's parents are highly educated do best on average, although there are similar levels of variations across the groups of 1+.
-
-Students having at least one the parents uneducated do not get lower than 10 but also no higher than 13 points, with the exception of 2 students:
-
-```{r}
-subset(student, subset = (Fedu == 0 | Medu == 0) & G3 > 13, 
-       select = c("G1", "G2", "G3", "age", "sex", "Medu", "Mjob",  "Fedu", "Fjob", "paid", "activities"))
-```
-
-#### Health
-
-Let's visualize how healthy are our students:
-
-```{r, echo=FALSE}
-hist(student$health, col = "dodgerblue", breaks=5, main = "Histogram of health", xlab = "health")
-```
-
-- `r mean(student$health >= 3)*100.0`% students report their health to be 3 and up,
-- `r mean(student$health < 3)*100.0`% students report health below 3.
-
-Let's visualize if health influences `G3` in significant way:
-
-```{r, echo=FALSE}
-ggplot(data = student, aes(x=health, y=G3, color=sex)) + geom_smooth(aes(group=sex), method="lm", se=FALSE)
-```
-
-Strangely, we're observing small, but inverse relationship between `health` and `G3`. Perhaps feeling good take students off their studying.
-
-#### Age
-
-Let's visualize relationship between `age`, `sex` and `G3`:
-
-```{r, echo=FALSE}
-ggplot(data = student, aes(x=age, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE)
-```
-
-We notice inverse relationship between `age` and `G3` performance for both sexes. Females are doing on average better than males by $`r mean(student[student$sex == 'F', 'G3']) - mean(student[student$sex == 'M', 'G3'])`$ points on `G3` and while no females over 21 are present in the dataset, there is 1 male student aged 22, doing the worst - a potential outlier:
-
-```{r}
-student[student$age == 22, c("sex", "age", "G1", "G2", "G3", 
-                             "higher", "failures", "studytime", "famsize")]
-```
+There are ``r sum(cor_matrix > 0.7 & cor_matrix < 1.0)`` pairs of numeric attributes with a high correlation of above `0.7`. However, they are `G1`, `G2` and `G3` (as we expected). We will use one of the grades as a response and ignore the others. Therefore we don't expect mutlicollinearity issues.
 
 
-#### Studytime, Absences
+## Linear and Logistic Regression
 
-Now let's observe how `studytime` and `absences` affect `G3`. We'll divide results by `sex`:
-
-```{r, echo=FALSE}
-ggarrange(
-  ggplot(student, aes(x=absences, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE),
-  ggplot(student, aes(x=studytime, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE)
-)
-```
-
-We're seeing a positive relationship between `studytime` and `G3` result, greater by a point than the inverse relationship between `absences` and `G3`. We'd expect students that do study in their free time should do better even if they miss the school.
-
-+ Average of G3 based on absences:
-  + Having 16 and more absences: `r mean(student[student$absences >= 16, "G3"])`,
-  + Having less than 16 absences: `r mean(student[student$absences < 16, "G3"])`,
-
-
-+ Average of G3 based on study time:
-  + Studied 3/5 or more: `r mean(student[student$studytime >= 3, "G3"])`,
-  + Studied 2/5 or less: `r mean(student[student$studytime < 3, "G3"])`,
-
-
-#### Alkohol consumption and Activities
-
-Now we'll look how alkohol consumption affect `G3` performance. We'll group the plots into people who take off-school `acivities` and those who do not.
-
-```{r, echo=FALSE}
-ggarrange(
-  ggplot(data = student, aes(x=Walc, y=G3, color=activities))
-    + geom_smooth(aes(group=activities), method="lm", se=FALSE) + xlab("Weekend Alkohol Consumption"),
-  ggplot(data = student, aes(x=Dalc, y=G3, color=activities))
-    + geom_smooth(aes(group=activities), method="lm", se=FALSE) + xlab("Daily Alkohol Consumption")
-)
-```
-
-We can clearly observe that daily consumption of alkohol resolves in much worse performance than weekend consumption. The effect is made even larger by lack of `activities`, especially for people consuming alkohol daily.
-
-Let's look how much are students drinking:
-
-```{r}
-par(mfrow=c(1,2))
-hist(student$Dalc, col = "dodgerblue", xlab = "Daily drinking", main = "Histogram of daily drinking")
-hist(student$Walc, col = "dodgerblue", xlab = "Weekend drinking", main = "Histogram of weekend drinking")
-```
-
-Good to know that vast majority of students drink very little or not at all, and the majority of weekend drinkers are also aiming for lowest possible levels of intoxication or at least they report so, although we're seeing a lot more of weekend drinkers.
-
-+ No. of drinkers:
-  + Light weekend drinkers: `r sum(student$Walc < 3)`,
-  + heavy weekend drinkers: `r sum(student$Walc >= 3)`,
-  + light daily drinkers: `r sum(student$Dalc < 3)`,
-  + heavy daily drinkers: `r sum(student$Dalc >= 3)`.
-  
-#### Response variable `G3`
+### Evaluation of distribution of response variable `G3`
 
 Visualize distribution of response attribute `G3`
 ```{r, echo=FALSE}
@@ -318,23 +163,6 @@ points(dpois(x = 0:20, lambda = 10), col = "orange", pch = 20, cex = 2)
 ```
 
 From a visual inspection, the response could either follow a normal (green curve) or a Poisson distribution (orange points). Since there is not a large delta of the "fit", we will primarily be using **Linear Regression Models** over **Generalized Linear Models with link function for Poisson distribution**.
-
-
-### Data correlation
-
-Evaluate correlation
-```{r}
-# Evaluate correlation
-cor_matrix = cor(student[, sapply(student, is.numeric)])
-which( cor_matrix > 0.7 & cor_matrix < 1.0, arr.ind = T)
-```
-
-There are ``r sum(cor_matrix > 0.7 & cor_matrix < 1.0)`` pairs of numeric attributes with a high correlation of above `0.7`. However, they are `G1`, `G2` and `G3` (as we expected). We will use one of the grades as a response and ignore the others. Therefore we don't expect mutlicollinearity issues.
-
-
-## Linear and Logistic Regression
-
-We will explore formulating the problem as linear (predict the grade) as well as logistic (predict `pass/fail`) problem.
 
 ### Data Split
 
@@ -462,15 +290,22 @@ We were able to improve our accuracy from ``r accuracy(large_add_mod)`` to ``r a
 Based on the improved model, we will also try to do a polynomial transformation:
 
 ```{r, cache=TRUE}
-int_pol_mod_large = lm(G3 ~ school + I(studytime ^ 2) + I(failures ^ 2) + higher + romantic + I(Medu ^ 2) + sex + schoolsup, data = student_trn)
+int_pol_mod_large = lm(G3 ~ school + studytime + I(studytime ^ 2) + failures + I(failures ^ 2) + higher + romantic + Medu + I(Medu ^ 2) + sex + schoolsup, data = student_trn)
 ```
+
+Let's only keep terms with a reasonable low p-value first:
+
+```{r}
+int_pol_mod_large = lm (G3 ~ school + studytime + failures + I(failures ^ 2) + higher + I(Medu ^ 2) + sex + schoolsup, data = student_trn)
+```
+
 
 ```{r}
 accuracy(int_pol_mod_large)
 loocv_rmse(int_pol_mod_large)
 ```
 
-The polynomial transformation did not deliver an improvement on unseen data for the large model (excl. `G1` and `G2`).
+The polynomial transformation did not deliver an improvement on unseen data for the large model (excl. `G1` and `G2`). So we will keep the additive model selected using $BIC$ as our *best* model (`int_mod_large_BIC`).
 
 Now let's do the same thing with the full model (including `G1` and `G2`). We will right aways start with `BIC` so to avoid overfitting (which we have seen before when using `AIC`):
 
@@ -655,9 +490,175 @@ loocv_rmse(bern_full)
 
 # Results
 
+## Basic data overview
+
+```{r}
+summary(student)
+```
+
+There are *383 females* and *266 males* in the dataset. A strong majority of *457 to 192 have more than 2 siblings*. Majority of *410 to 239 aren't in romantic relationships* and strong majority of *580 to 69 want higher education*. On average our students report *good health* and *good relationship* with their families. Strong majority of *455 to 194 have mother* as their guardian. Students go out 3 days a week on average, which is as much as they have free time. On average, they are absent from class 3.66 days, with one person being absent 32 days.
+
+```{r}
+student[student$absences > 20, c("G1", "G2", "G3", "absences", "sex", "age")]
+```
+
+### Best and worse students
+
+Let's start off by looking at best students, understood as those that scored higher than 17 on `G3`:
+
+```{r}
+best_students = student[student$G3 > 17, ]
+worst_students = student[student$G3 < 6, ]
+```
+
+```{r, echo=FALSE}
+roundmean = function(x) round(mean(x), 2)
+knitr::kable(
+  x = do.call(rbind, list(
+    c("Average age", roundmean(best_students$age), roundmean(worst_students$age)),
+    c("Average study time", roundmean(best_students$studytime), roundmean(worst_students$studytime)),
+    c("How many had a paid tuition", sum(best_students$paid == "yes"), sum(worst_students$paid == "yes")),
+    c("Average health", roundmean(best_students$health), roundmean(worst_students$health)),
+    c("Average drinking during the week", roundmean(best_students$Dalc), roundmean(worst_students$Dalc)),
+    c("Average drinking during the weeekend", roundmean(best_students$Walc), roundmean(worst_students$Walc)),
+    c("Average family relationship", roundmean(best_students$famrel), roundmean(worst_students$famrel)),
+    c("Average free time", roundmean(best_students$freetime), roundmean(worst_students$freetime)),
+    c("Average father's education", roundmean(best_students$Fedu), roundmean(worst_students$Fedu)),
+    c("Average mother's education", roundmean(best_students$Medu), roundmean(worst_students$Medu))
+  )),
+  col.names = c("Query", "Best students", "Worst students"),
+  digits = c(0, 2, 2),
+  format = "markdown")
+```
+
+We observe that best students are on average younger, study more and drink less than their worst counterparts, they also tend to have less free time and report worse health. They also didn't do any paid tuition.
+
+### Guardian
+
+Now we'll look at `G3` performance based on student's primary guardian:
+
+```{r}
+boxplot(student$G3 ~ student$guardian, xlab = "guardian", ylab = "G3",
+        col = "dodgerblue", main = "Variance of G3 by guardian")
+```
+
+We observe that students who's primary guardian is mother have broadest variance on both ends. Fathers tend to limit lower end at the cost of some higher end. Other types of guardians seem to do worse on average, having much smaller variance on both ends.
+
+### Parents education
+
+Now let's see how parents's education influences their children:
+
+```{r, echo=FALSE}
+boxplot(student$G3 ~ student$Medu, xlab = "Mother's education level", ylab = "G3",
+        col = "dodgerblue", main = "Variance of G3 by Mother's education level")
+```
+
+```{r, echo=FALSE}
+boxplot(student$G3 ~ student$Fedu, xlab = "Father's education level", ylab = "G3",
+        col = "dodgerblue", main = "Variance of G3 by Father's education level")
+```
+
+It can be observed that students who's parents are highly educated do best on average, although there are similar levels of variations across the groups of 1+.
+
+Students having at least one the parents uneducated do not get lower than 10 but also no higher than 13 points, with the exception of 2 students:
+
+```{r}
+subset(student, subset = (Fedu == 0 | Medu == 0) & G3 > 13, 
+       select = c("G1", "G2", "G3", "age", "sex", "Medu", "Mjob",  "Fedu", "Fjob", "paid", "activities"))
+```
+
+### Health
+
+Let's visualize how healthy are our students:
+
+```{r, echo=FALSE}
+hist(student$health, col = "dodgerblue", breaks=5, main = "Histogram of health", xlab = "health")
+```
+
+- `r mean(student$health >= 3)*100.0`% students report their health to be 3 and up,
+- `r mean(student$health < 3)*100.0`% students report health below 3.
+
+Let's visualize if health influences `G3` in significant way:
+
+```{r, echo=FALSE}
+ggplot(data = student, aes(x=health, y=G3, color=sex)) + geom_smooth(aes(group=sex), method="lm", se=FALSE)
+```
+
+Strangely, we're observing small, but inverse relationship between `health` and `G3`. Perhaps feeling good take students off their studying.
+
+### Age
+
+Let's visualize relationship between `age`, `sex` and `G3`:
+
+```{r, echo=FALSE}
+ggplot(data = student, aes(x=age, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE)
+```
+
+We notice inverse relationship between `age` and `G3` performance for both sexes. Females are doing on average better than males by $`r mean(student[student$sex == 'F', 'G3']) - mean(student[student$sex == 'M', 'G3'])`$ points on `G3` and while no females over 21 are present in the dataset, there is 1 male student aged 22, doing the worst - a potential outlier:
+
+```{r}
+student[student$age == 22, c("sex", "age", "G1", "G2", "G3", 
+                             "higher", "failures", "studytime", "famsize")]
+```
+
+
+### Studytime, absences
+
+Now let's observe how `studytime` and `absences` affect `G3`. We'll divide results by `sex`:
+
+```{r, echo=FALSE}
+ggarrange(
+  ggplot(student, aes(x=absences, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE),
+  ggplot(student, aes(x=studytime, y=G3, color=sex))+geom_smooth(aes(group=sex), method="lm", se=FALSE)
+)
+```
+
+We're seeing a positive relationship between `studytime` and `G3` result, greater by a point than the inverse relationship between `absences` and `G3`. We'd expect students that do study in their free time should do better even if they miss the school.
+
++ Average of G3 based on absences:
+  + Having 16 and more absences: `r mean(student[student$absences >= 16, "G3"])`,
+  + Having less than 16 absences: `r mean(student[student$absences < 16, "G3"])`,
+
+
++ Average of G3 based on study time:
+  + Studied 3/5 or more: `r mean(student[student$studytime >= 3, "G3"])`,
+  + Studied 2/5 or less: `r mean(student[student$studytime < 3, "G3"])`,
+
+
+### Alkohol consumption and Activities
+
+Now we'll look how alkohol consumption affect `G3` performance. We'll group the plots into people who take off-school `acivities` and those who do not.
+
+```{r, echo=FALSE}
+ggarrange(
+  ggplot(data = student, aes(x=Walc, y=G3, color=activities))
+    + geom_smooth(aes(group=activities), method="lm", se=FALSE) + xlab("Weekend Alkohol Consumption"),
+  ggplot(data = student, aes(x=Dalc, y=G3, color=activities))
+    + geom_smooth(aes(group=activities), method="lm", se=FALSE) + xlab("Daily Alkohol Consumption")
+)
+```
+
+We can clearly observe that daily consumption of alkohol resolves in much worse performance than weekend consumption. The effect is made even larger by lack of `activities`, especially for people consuming alkohol daily.
+
+Let's look how much are students drinking:
+
+```{r}
+par(mfrow=c(1,2))
+hist(student$Dalc, col = "dodgerblue", xlab = "Daily drinking", main = "Histogram of daily drinking")
+hist(student$Walc, col = "dodgerblue", xlab = "Weekend drinking", main = "Histogram of weekend drinking")
+```
+
+Good to know that vast majority of students drink very little or not at all, and the majority of weekend drinkers are also aiming for lowest possible levels of intoxication or at least they report so, although we're seeing a lot more of weekend drinkers.
+
++ No. of drinkers:
+  + Light weekend drinkers: `r sum(student$Walc < 3)`,
+  + Heavy weekend drinkers: `r sum(student$Walc >= 3)`,
+  + Light daily drinkers: `r sum(student$Dalc < 3)`,
+  + Heavy daily drinkers: `r sum(student$Dalc >= 3)`.
+
 ## Linear regression
 
-### Prediction results
+### Prediction performance
 
 The following table shows the **accuracy** on test data, $LOOCV-RMSE$ and $R^2$ of the best models we built and the baseline model (see [Initial Model Evaluation](#initialModelEvalLinear)) using linear regression:
 
@@ -720,13 +721,17 @@ The plots show us:
 
 We will need the `estimate` as well as the `p-value` for explaining the impact of social and demographic features on performance. The [discussions chapter](#discussionsChap) will be used for the explanation.
 
-```{r, echo = FALSE}
+For the full model:
+
+```{r echo = FALSE}
 kable(summary(int_pol_mod_full)$coef,
       format = 'markdown',
       digits = 2)
 ```
 
-```{r}
+And for the large model:
+
+```{r echo = FALSE}
 kable(summary(int_mod_large_BIC)$coef,
       format = 'markdown',
       digits = 2)
@@ -748,7 +753,7 @@ The predicted vs. actual plots show us that:
 * Special circumstances leading to `0` points can not be explained by the data. 
 * `G1` and `G2` are needed to more or lesss precisely estimate the grade (+/- ~3 points). Without them, the trend is still present, but the precision goes down (+/- ~6).
 
-## Model interpretation {#discussionsChap}
+## Regression Model interpretation {#discussionsChap}
 
 While the full model `Full (incl. G1 and G2)` achieves an $R^2$ of ``r summary(int_pol_mod_full)$r.squared``, the larger model `Large (excl. G1 and G2)` does only achieve an $R^2$ of ``r summary(int_mod_large_BIC)$r.squared``. So the model without `G1` and `G2` explains ``r summary(int_mod_large_BIC)$r.squared`` of the variability in the data (which is ``r summary(int_pol_mod_full)$r.squared - summary(int_mod_large_BIC)$r.squared`` less than the model including `G1` and `G2`). This is what we intuitively would expect: **the most significant predictor for a student`s performance, is his or her past performance.**
 
@@ -773,7 +778,7 @@ We can distinguish 3 different areas impacting the performance:
     
 **Past performances**
 
-intuitively, the results make sense: if a student has had general difficulties in the past (indicated by `failures` and `schoolsup`), unfortunetly also his/her future performances will according to the model be lower as compared to a student who didn't have such difficulties. 
+Intuitively, the results make sense: if a student has had general difficulties in the past (indicated by `failures` and `schoolsup`), unfortunetly also his/her future performances will according to the model be lower as compared to a student who didn't have such difficulties. 
 
 **Student motivation**
 
