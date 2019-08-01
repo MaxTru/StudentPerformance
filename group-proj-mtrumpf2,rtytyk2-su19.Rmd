@@ -144,7 +144,7 @@ which( cor_matrix > 0.7 & cor_matrix < 1.0, arr.ind = T)
 There are ``r sum(cor_matrix > 0.7 & cor_matrix < 1.0)`` pairs of numeric attributes with a high correlation of above `0.7`. However, they are `G1`, `G2` and `G3` (as we expected). We will use one of the grades as a response and ignore the others. Therefore we don't expect mutlicollinearity issues.
 
 
-## Linear and Logistic Regression
+## Linear Regression Analysis
 
 ### Evaluation of distribution of response variable `G3`
 
@@ -450,44 +450,6 @@ diagnostics(int_pol_mod_full_cleaned)
 
 While the plots for our so far best model do not look so good, most of the issues could be resolved by removing unusual observations. However, since the model with the unusual observations removed performs significantly worse on unseen data, we will stick to the initial version (without unusual observations removed).
 
-### Logistic regression
-
-I think our main difficulty is in the fact that the score is a number of 0..19 which is quite hard to pinpoint exactly having limited number of samples.
-
-We will redefine our problem in terms of logistic regression. Taking `10` as a `PASS` threshold and build a model for that:
-
-```{r} 
-student_trn$outcome = ifelse(student_trn$G3 > 10, 1, 0)
-student_tst$outcome = ifelse(student_tst$G3 > 10, 1, 0)
-```
-
-```{r}
-bern_full = glm(outcome ~ . - G3, data = student_trn, family = "binomial")
-
-bern_accuracy = function(model) {
-  mean(ifelse(predict(model, student_tst) > 0, 1, 0) == student_tst$outcome)
-}
-
-bern_accuracy(bern_full)
-loocv_rmse(bern_full)
-```
-
-90%
-
-*The methods section should contain the bulk of your “work.” This section will contain the bulk of the R code that is used to generate the results. Your R code is not expected to be perfect idiomatic R, but it is expected to be understood by a reader without too much effort. Use RMarkdown and code comments to your advantage to explain your code if needed.*
-
-*This section should contain any information about data preparation that is performed to the original data before modelling. Then you will apply methods seen in class, which may include some of the following but are not limited to:*
-
-*Multiple linear regression*
-*Dummy variables*
-*Interaction*
-*Residual diagnostics*
-*Outlier diagnostics*
-*Transformations*
-*Polynomial regression*
-*Model selection*
-*Your task is not to use as many methods as possible. Your task is to use appropriate methods to find a good model that can correctly answer a question about the dataset, and then to communicate your result effectively.*
-
 # Results
 
 ## Basic data overview
@@ -736,10 +698,6 @@ kable(summary(int_mod_large_BIC)$coef,
       format = 'markdown',
       digits = 2)
 ```
-
-## Logistic regression
-
-*The results section should contain numerical or graphical summaries of your results. You should report a final model you have chosen. There is not necessarily one, singular correct model, but certainly some methods and models are better than others in certain situations. You may use any methods we studied this semester to complete this task, and provide evidence that your final choice of model is a good one.*
 
 # Discussion {#discussion_chapter}
 
