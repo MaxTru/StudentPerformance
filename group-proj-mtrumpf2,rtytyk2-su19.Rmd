@@ -750,8 +750,3 @@ Still there are also factors, which can hardly be influenced and yet impact the 
 
 Having data about the previously mentioned attriutes, makes the remaining predictors not significant for the prediction of student performance (`G3`). It should be highlighted, that factors which are often stated as being significant in the publich opinion, such as neighborhood (`address`) and family size (`famsize`).
 
-*The discussion section should contain discussion of your results and should frame your results in the context of the data. How is your final model useful?*
-
-# Appendix
-
-*The appendix section should contain code and analysis that is used, but that may clutter the report or is not directly related to the choice of model.*
