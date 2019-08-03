@@ -565,10 +565,8 @@ which( cor_matrix &gt; 0.7 &amp; cor_matrix &lt; 1.0, arr.ind = T)</code></pre>
 <div id="data-split" class="section level3">
 <h3>Data Split</h3>
 <p>We’ll split our dataset into train/test sets:</p>
-<pre class="r"><code>set.seed(42, sample.kind = &quot;Rounding&quot;)</code></pre>
-<pre><code>## Warning in set.seed(42, sample.kind = &quot;Rounding&quot;): non-uniform 'Rounding'
-## sampler used</code></pre>
-<pre class="r"><code>trn_idx = sample(nrow(student), round(nrow(student)*.8))
+<pre class="r"><code>set.seed(42, sample.kind = &quot;Rounding&quot;)
+trn_idx = sample(nrow(student), round(nrow(student)*.8))
 student_trn = student[trn_idx, ]
 student_tst = student[-trn_idx, ]</code></pre>
 </div>
