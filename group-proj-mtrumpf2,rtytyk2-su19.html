@@ -565,10 +565,10 @@ which( cor_matrix &gt; 0.7 &amp; cor_matrix &lt; 1.0, arr.ind = T)</code></pre>
 <div id="data-split" class="section level3">
 <h3>Data Split</h3>
 <p>We’ll split our dataset into train/test sets:</p>
-<pre class="r"><code>set.seed(42)
-#trn_idx = sample(nrow(student), round(nrow(student)*.8))
-# To ensure consistent results across linux and Windows we hard code the randomly generated idx
-trn_idx = c(594, 608, 186, 537, 414, 335, 474, 87, 422, 452, 293, 459, 596, 163, 294, 637, 620, 75, 300, 354, 569, 88, 621, 593, 52, 321, 244, 564, 278, 519, 457, 502, 240, 423, 3, 512, 5, 128, 554, 374, 232, 265, 23, 590, 262, 579, 536, 386, 584, 372, 200, 208, 238, 468, 24, 445, 402, 102, 155, 304, 398, 578, 446, 332, 498, 111, 159, 482, 403, 140, 25, 82, 125, 277, 114, 413, 613, 215, 635, 1, 331, 90, 204, 366, 439, 318, 132, 51, 49, 171, 610, 570, 117, 633, 514, 407, 185, 285, 410, 341, 344, 120, 119, 213, 555, 524, 626, 589, 290, 2, 329, 451, 404, 243, 287, 535, 558, 190, 326, 440, 189, 217, 303, 311, 378, 207, 481, 503, 122, 377, 469, 313, 327, 484, 438, 299, 641, 59, 391, 319, 76, 41, 236, 395, 371, 412, 86, 475, 148, 632, 359, 162, 388, 196, 336, 384, 93, 15, 67, 334, 458, 269, 571, 96, 260, 642, 219, 153, 56, 568, 350, 197, 198, 229, 567, 65, 511, 280, 375, 362, 431, 646, 149, 121, 346, 347, 425, 367, 62, 133, 480, 360, 614, 619, 33, 604, 241, 562, 495, 330, 542, 609, 381, 477, 71, 478, 429, 572, 112, 115, 597, 552, 501, 27, 444, 365, 249, 582, 507, 494, 211, 74, 448, 551, 134, 348, 130, 79, 21, 104, 437, 491, 127, 8, 645, 490, 36, 499, 228, 173, 28, 230, 29, 522, 223, 195, 643, 61, 201, 520, 463, 500, 108, 443, 9, 315, 44, 212, 224, 242, 279, 48, 466, 566, 193, 625, 333, 513, 353, 337, 430, 297, 560, 379, 586, 126, 548, 151, 178, 137, 172, 19, 69, 489, 373, 63, 505, 7, 123, 11, 312, 605, 113, 138, 547, 32, 268, 546, 376, 12, 169, 591, 421, 575, 606, 624, 135, 55, 110, 105, 37, 471, 168, 630, 649, 526, 99, 528, 545, 517, 142, 616, 47, 92, 184, 527, 116, 272, 427, 453, 295, 533, 640, 417, 352, 600, 380, 383, 254, 91, 316, 611, 246, 601, 13, 305, 541, 357, 603, 274, 563, 369, 22, 561, 483, 580, 401, 627, 145, 370, 585, 188, 81, 281, 325, 166, 175, 261, 550, 534, 26, 638, 396, 308, 496, 648, 523, 30, 16, 225, 157, 559, 98, 449, 583, 338, 389, 253, 45, 607, 473, 136, 349, 456, 515, 577, 245, 476, 139, 368, 6, 612, 156, 420, 216, 436, 239, 581, 464, 493, 322, 251, 57, 400, 35, 574, 543, 181, 504, 14, 623, 306, 405, 255, 361, 17, 340, 509, 432, 465, 302, 355, 267, 250, 599, 4, 89, 296, 525, 592, 258, 192, 222, 177, 461, 95, 276, 164, 399, 345, 406, 382, 356, 328, 80, 60, 50, 275, 556, 161, 266, 492, 424, 408, 576, 118, 256, 235, 72, 247, 364, 622, 289, 518, 199, 472, 307, 180, 301, 639, 40, 97, 141, 553, 419, 428, 146, 508, 647, 416, 298, 77, 460, 390, 544, 203, 557, 450, 263, 573, 320, 252, 158, 218, 259, 129, 83, 467, 248, 234, 539, 107, 538, 42, 644, 282, 565, 487, 46)
+<pre class="r"><code>set.seed(42, sample.kind = &quot;Rounding&quot;)</code></pre>
+<pre><code>## Warning in set.seed(42, sample.kind = &quot;Rounding&quot;): non-uniform 'Rounding'
+## sampler used</code></pre>
+<pre class="r"><code>trn_idx = sample(nrow(student), round(nrow(student)*.8))
 student_trn = student[trn_idx, ]
 student_tst = student[-trn_idx, ]</code></pre>
 </div>
@@ -605,7 +605,7 @@ coef(baseline_mod)[[1]]</code></pre>
 influence(full_add_mod)</code></pre>
 <pre><code>##     failures           G1           G2 
 ## 2.599541e-04 1.496760e-03 1.324223e-69</code></pre>
-<p>We’re finding <code>G2</code> and <code>G1</code> as being very influential for the outcome of <code>G3</code>. This is expected, but we’d like to understand influence of other factors that the exams themselves, thus we’ll remove both and try another model:</p>
+<p>As expected, we’re finding <code>G2</code> and <code>G1</code> as being very influential as well as <code>failures</code>. As we already expected that past performances are the major predictor for future performances, we will work with a model without <code>G1</code> and <code>G2</code>:</p>
 <pre class="r"><code>large_add_mod = lm(G3 ~ . - G2 - G1, data = student_trn)
 influence(large_add_mod)</code></pre>
 <pre><code>##  (Intercept)     schoolMS    studytime     failures    higheryes 
@@ -674,7 +674,7 @@ int_mod_full_BIC = step(small_add_mod, scope = scope, direction = &quot;forward&
 <pre><code>## [1] 0.5076923</code></pre>
 <pre class="r"><code>loocv_rmse(int_pol_mod_full)</code></pre>
 <pre><code>## [1] 1.554996</code></pre>
-<p>This could further increase our accuracy from <code>0.4076923</code> to <code>0.5076923</code>.</p>
+<p>This could further increase our accuracy from <code>0.4923077</code> to <code>0.5076923</code>.</p>
 </div>
 <div id="regression-diagnostics" class="section level4">
 <h4>Regression diagnostics</h4>
@@ -1246,7 +1246,7 @@ diagnostics = function(model, pcol = &quot;grey&quot;, lcol = &quot;dodgerblue&q
 <p><strong>Social factors</strong></p>
 <p>Still there are also factors, which can hardly be influenced and yet impact the performance. These include <code>romantic</code> and <code>sex</code>, two factors which cannot be influenced.</p>
 <p><strong>Irrelevant factors</strong></p>
-<p>Having data about the previously mentioned attributes makes the remaining predictors not significant for the prediction of student performance (<code>G3</code>). It should be highlighted, that factors which are often stated as being significant in the publich opinion, such as neighborhood (<code>address</code>) and family size (<code>famsize</code>), are not significant in this dataset.</p>
+<p>Having data about the previously mentioned attributes makes the remaining predictors not significant for the prediction of student performance (<code>G3</code>). It should be highlighted, that factors which are often stated as being significant in the publich opinion, such as neighborhood (<code>address</code>) and family size (<code>famsize</code>), could not be identified as highly significant in this dataset (given the other predictors are used).</p>
 </div>
 </div>
 
